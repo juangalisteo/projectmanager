@@ -1,0 +1,20 @@
+# Trabajo con la IA: privado, nunca se sube
+AGENT_AI/
+00_CONFIG/
+00_INICIO_CHAT.md
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Entorno y secretos
+.env
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini

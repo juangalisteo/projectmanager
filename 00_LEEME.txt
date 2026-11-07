@@ -1,0 +1,102 @@
+PROJECT MANAGER v1.0.0 · CREA PROYECTOS ORDENADOS PARA TRABAJAR CON IA
+
+PARA QUÉ SIRVE
+Crea en un clic la carpeta de un proyecto nuevo con todo lo necesario para
+trabajar con Claude: reglas para los agentes, plan, estado, prompts de inicio,
+normas de nombres, reglas de escritura y, si es un documento, el manual de
+estilo con su generador de PDF. Así no hay que explicar cada vez cómo quieres
+trabajar ni adjuntar archivos a mano.
+
+LA PRIMERA VEZ
+1. Necesitas Python 3 instalado (python.org). No hace falta instalar nada más.
+2. Doble clic en 02_CREAR_ACCESO_DIRECTO.cmd si quieres el icono en el escritorio.
+3. Opcional: cada proyecto ya trae las reglas de escritura en
+   00_CONFIG\01_WRITING_RULES.md. Si además pegas una vez el contenido de
+   PLANTILLA\00_MODULOS\ESCRITURA\02_WRITING_RULES.md en las instrucciones
+   personales de Claude, también valdrán en los chats sueltos.
+
+CÓMO SE USA
+1. Doble clic en 01_CREAR_PROYECTO.cmd.
+2. 01 Nombre: por ejemplo "Mi proyecto". La carpeta se llamará MI_PROYECTO
+   (mayúsculas, sin tildes y con _ en lugar de espacios).
+3. 02 Tipo:
+   - Documento: libros, manuales, investigaciones y documentación.
+     Incluye el manual de estilo.
+   - Proyecto: software, aplicaciones, páginas web y desarrollo, con Git.
+   - General: cualquier otro trabajo, con lo mínimo para empezar: reglas,
+     estado y una carpeta 01_WORK.
+4. 03 Color principal: en "Color", pulsa el cuadro para elegirlo, escribe su
+   código (#RRGGBB) o pulsa el icono de la flecha circular para uno al azar.
+   Debajo ves la paleta que sale de él (fondo, texto, acento, recuadros y
+   bordes). "Predeterminado" usa la paleta del sistema: dorado, azul pizarra
+   y blanco roto.
+5. 04 Asistentes: Claude va siempre. Activa ChatGPT (Codex) si lo usas:
+   en verde está activado y en rojo, desactivado.
+6. 05 Carpeta de destino: dónde se creará el proyecto. Se recuerda para la
+   próxima vez.
+7. Pulsa "Crear proyecto". Se abre la carpeta nueva.
+8. Pulsa "Prompt · IA" para copiar el prompt de inicio y pégalo como primer
+   mensaje en un chat nuevo de Claude (app de escritorio). Claude pide acceso
+   a la carpeta y empieza.
+
+QUÉ RECIBES EN CADA PROYECTO
+Todos llevan:
+  README.md            Ficha del proyecto y cómo empezar (en Proyecto, la
+                       presentación para GitHub)
+  00_INICIO_CHAT.md    Prompts para empezar un chat (el botón "Prompt · IA"
+                       copia el primero)
+  AGENTS.md            Reglas para los agentes de IA
+  00_CONFIG\           Reglas de escritura (01_WRITING_RULES.md) y normas de
+                       nombres (02_NAMING.md)
+  AGENT_AI\ESTADO.md   Dónde estamos y qué sigue
+
+General añade:     01_WORK\
+Documento añade:   la ficha con la paleta (00_CONFIG\00_PROJECT_CONFIG.json),
+                   AGENT_AI\TRABAJO\PLAN.md, AGENT_AI\CLAUDE\BITACORA.md,
+                   01_MATERIALS\, 02_WORK\, 03_EXPORT\ y 04_STYLE_MANUAL\
+Proyecto añade:    la ficha, la guía de prompts (00_CONFIG\03_PROMPTS_GUIDE.md),
+                   AGENT_AI completo (LEEME, PLAN, IDEAS_FUTURAS y CLAUDE con
+                   bitácora, puente e informes), CLAUDE.md, CHANGELOG.md,
+                   .gitignore, LICENSE (GPL-3.0), docs\ y tests\
+Con ChatGPT:       AGENT_AI\CODEX\, con las reglas y la bitácora de Codex
+
+SI MUEVES UN PROYECTO DE SITIO
+Cambia la ruta en README.md, 00_INICIO_CHAT.md y en el campo proyecto.ruta de
+00_CONFIG\00_PROJECT_CONFIG.json.
+
+CAMBIAR LA PLANTILLA
+Todo lo que se copia está en PLANTILLA. Los textos llevan etiquetas que se
+rellenan al crear el proyecto: [PROYECTO], [CARPETA], [RUTA], [TIPO], [COLOR],
+[FECHA], [FECHA_ISO], [AUTOR] y [GITHUB]. Los bloques [[SI DOCUMENTO]] ...
+[[FIN]] solo aparecen en ese tipo de proyecto (también PROYECTO, GENERAL, CODEX,
+y varios a la vez: [[SI DOCUMENTO|GENERAL]]). Lo de
+PLANTILLA\00_MODULOS se copia tal cual, sin etiquetas.
+El autor y tu usuario de GitHub están en APP\projectmanager_ajustes.json.
+
+ESTRUCTURA DE LA CARPETA
+PROJECT_MANAGER
+  00_LEEME.txt                  Estas instrucciones
+  01_CREAR_PROYECTO.cmd         Abre la ventana
+  02_CREAR_ACCESO_DIRECTO.cmd   Crea el icono del escritorio
+  APP\                          La ventana (interfaz.py), el creador (creador.py),
+                                el icono y tus ajustes
+  PLANTILLA\                    Lo que se copia a cada proyecto
+    00_MODULOS\                 Lo que comparten los tipos: reglas de escritura,
+                                normas de nombres y manual de estilo
+    01_GENERAL\                 General (00_BASE y, con ChatGPT, 01_CODEX)
+    02_DOCUMENTO\               Documento (00_BASE y 01_CODEX)
+    03_PROYECTO\                Proyecto (00_BASE, 01_CODEX y 02_LICENSE)
+  tests\                        Pruebas del creador
+  AGENT_AI\                     Estado de este programa para trabajar con la IA
+  docs\                         Imágenes del README
+  README.md                     Presentación del proyecto (GitHub)
+  CHANGELOG.md                  Historial de versiones
+  LICENSE                       Licencia GPL-3.0
+
+SI ALGO FALLA
+Los errores de la ventana se guardan en APP\projectmanager_errores.log.
+También puedes crear un proyecto desde la consola:
+  python APP\creador.py --nombre "Mi proyecto" --tipo DOCUMENTO --destino "C:\ruta" --color "#2E7D6B"
+
+Autor: Juan Bautista Galisteo Marqués (@juangalisteo)
+Licencia: GPL-3.0 (archivo LICENSE)

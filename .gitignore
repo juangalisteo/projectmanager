@@ -1,0 +1,22 @@
+# Notas internas de trabajo con la IA y carpetas para borrar o subir
+/AGENT_AI/
+/BORRAR/
+/SUBIR/
+
+# Ajustes personales y registros de cada usuario
+APP/projectmanager_ajustes.json
+APP/projectmanager_errores.log
+
+# Restos de Python
+__pycache__/
+*.py[cod]
+
+# Archivos temporales del generador del manual
+PLANTILLA/00_MODULOS/MANUAL/03_SOURCE/00_TEMP/
+
+# Archivos de Windows
+Thumbs.db
+desktop.ini
+
+# La plantilla de Proyecto lleva su propio .gitignore (para los proyectos que se crean).
+# Sus archivos se suben igual: se añadieron con "git add -f" y Git ya los sigue.

@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0.0",
+  "document": {
+    "title_lines": ["Manual de estilo", "y maquetación."],
+    "pdf_title": "Manual de estilo y maquetación / Versión 1.0",
+    "author": "Juan Bautista Galisteo Marqués",
+    "version": "1.0",
+    "date": "6 de noviembre de 2026",
+    "language": "es-ES",
+    "content": "01_MANUAL_DE_ESTILO.md",
+    "output": "00_MANUAL_DE_ESTILO.pdf"
+  },
+  "header": {
+    "name": "SISTEMA EDITORIAL",
+    "icon": "grid",
+    "logo_path": null,
+    "right_label": "MANUAL DE ESTILO Y MAQUETACIÓN / V1.0",
+    "cover_right_label": "MANUAL DE ESTILO Y MAQUETACIÓN"
+  },
+  "cover": {
+    "category_label": "NORMAS PARA PRODUCIR DOCUMENTOS",
+    "subtitle": "Redacción, diseño y composición para documentos con una misma identidad.",
+    "visual_label": "Material editorial sobre piedra: la base común de cada documento",
+    "image_path": "03_SOURCE/04_IMAGES/01_COVER_PHOTO.png"
+  },
+  "identity": {
+    "font_family": "Inter",
+    "font_is_fixed": true,
+    "primary_color": "#C7A15B",
+    "palette_mode": "identidad_original",
+    "palette_reference": "Identidad original del sistema: azul pizarra, dorado cálido y blanco roto. El manual se compone siempre con ella.",
+    "colors": {
+      "background": "#FAFAF7",
+      "surface": "#FFFFFF",
+      "text": "#22343D",
+      "muted": "#596771",
+      "accent": "#C7A15B",
+      "accent_text": "#7B5A26",
+      "accent_surface": "#F3E9D6",
+      "border": "#DADFE1",
+      "row": "#F3F5F6",
+      "gradient_strong": "#EAD5AC",
+      "gradient_soft": "#F5ECD9",
+      "grid_line": "#EDF0F1",
+      "accent_on_dark": "#C7A15B"
+    }
+  },
+  "layout": {
+    "page": "A4",
+    "margin_mm": 14,
+    "columns": 6,
+    "gutter_pt": 14,
+    "grid_step_pt": 21,
+    "body_pt": 10.5,
+    "body_leading_pt": 15,
+    "title_pt": 28,
+    "header_rule_top_pt": 60,
+    "block_top_pt": 68,
+    "section_label_top_pt": 85,
+    "title_top_pt": 101,
+    "title_after_pt": 18,
+    "content_top_pt": 78,
+    "footer_rule_from_bottom_pt": 34,
+    "min_space_to_share_page_pt": 160,
+    "photo_radius_pt": 12,
+    "card_radius_pt": 10
+  }
+}
