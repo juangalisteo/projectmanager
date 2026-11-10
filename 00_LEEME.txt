@@ -1,4 +1,4 @@
-PROJECT MANAGER v1.1.0 · CREA PROYECTOS ORDENADOS PARA TRABAJAR CON IA
+PROJECT MANAGER v1.2.0 · CREA PROYECTOS ORDENADOS PARA TRABAJAR CON IA
 
 PARA QUÉ SIRVE
 Crea en un clic la carpeta de un proyecto nuevo con todo lo necesario para
@@ -62,8 +62,11 @@ Proyecto añade:    la ficha, la guía de prompts (00_CONFIG\03_PROMPTS_GUIDE.md
 Con ChatGPT:       AGENT_AI\CODEX\, con las reglas y la bitácora de Codex
 
 SI MUEVES UN PROYECTO DE SITIO
-Cambia la ruta en README.md, 00_INICIO_CHAT.md y en el campo proyecto.ruta de
-00_CONFIG\00_PROJECT_CONFIG.json.
+Pulsa "Actualizar ruta" (arriba a la derecha, junto a "01 Nombre") y elige la
+carpeta del proyecto en su sitio nuevo. Project Manager cambia la ruta en
+00_INICIO_CHAT.md, README.md y en el campo proyecto.ruta de
+00_CONFIG\00_PROJECT_CONFIG.json. Desde la consola:
+  python APP\creador.py --actualizar-ruta "C:\nueva\ruta\MI_PROYECTO"
 
 CAMBIAR LA PLANTILLA
 Todo lo que se copia está en PLANTILLA. Los textos llevan etiquetas que se

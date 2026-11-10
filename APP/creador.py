@@ -15,7 +15,11 @@ Qué hace:
 Lo crea todo primero en una carpeta temporal y solo al final le pone su nombre: si algo
 falla, no queda una carpeta a medias.
 
-Project:   Project Manager v1.1.0
+También actualiza la ruta de un proyecto que se ha movido de carpeta:
+
+    python APP/creador.py --actualizar-ruta "C:\\nueva\\ruta\\MI_PROYECTO"
+
+Project:   Project Manager v1.2.0
 Author:    Juan Bautista Galisteo Marqués (@juangalisteo)
 """
 from __future__ import annotations
@@ -38,7 +42,7 @@ APP = Path(__file__).resolve().parent
 ROOT = APP.parent
 PLANTILLA = ROOT / "PLANTILLA"
 SETTINGS = APP / "projectmanager_ajustes.json"
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 
 TIPOS = {
     "DOCUMENTO": "Documento",
@@ -359,17 +363,103 @@ def crear_proyecto(o: Opciones) -> Resultado:
     return Resultado(final, archivos, carpeta)
 
 
+# ── Actualizar ruta ───────────────────────────────────────────────────────
+# Files where Project Manager writes the project's path when it creates a project.
+CON_RUTA = ["00_INICIO_CHAT.md", "README.md"]
+FICHA = Path("00_CONFIG") / "00_PROJECT_CONFIG.json"
+RUTA_README = re.compile(r"^\| Carpeta \| `(.+?)` \|[ \t]*$", re.M)
+RUTA_PROMPT = re.compile(r"Pídeme acceso a la carpeta del proyecto \(una sola petición\):[ \t]*\r?\n[ \t]+(\S.*?)[ \t]*$", re.M)
+
+
+@dataclass
+class ResultadoRuta:
+    ruta: Path
+    archivos: list[str]   # files that were changed (relative paths)
+    viejas: list[str]     # old paths that were replaced
+
+
+def rutas_guardadas(carpeta: Path) -> list[str]:
+    """The paths written in the project (card, README and start prompt), without repeats."""
+    encontradas = []
+    ficha_path = carpeta / FICHA
+    if ficha_path.is_file():
+        try:
+            ruta = json.loads(ficha_path.read_text(encoding="utf-8")).get("proyecto", {}).get("ruta")
+            if ruta:
+                encontradas.append(ruta)
+        except (json.JSONDecodeError, AttributeError):
+            raise ErrorProyecto(f"La ficha {FICHA} no se puede leer: revisa que sea un JSON válido.")
+    for nombre, patron in (("README.md", RUTA_README), ("00_INICIO_CHAT.md", RUTA_PROMPT)):
+        archivo = carpeta / nombre
+        if archivo.is_file():
+            encontradas += patron.findall(archivo.read_text(encoding="utf-8"))
+    return list(dict.fromkeys(r.strip() for r in encontradas if r.strip()))
+
+
+def actualizar_ruta(carpeta: Path) -> ResultadoRuta:
+    """Writes the project's current path where the old one was (after moving or renaming it)."""
+    carpeta = Path(carpeta).expanduser()
+    if not str(carpeta).strip() or not carpeta.is_dir():
+        raise ErrorProyecto("Elige la carpeta del proyecto que has movido.")
+    carpeta = carpeta.resolve()
+    if not (carpeta / "00_INICIO_CHAT.md").is_file():
+        raise ErrorProyecto(f"{carpeta.name} no parece un proyecto de Project Manager: no tiene 00_INICIO_CHAT.md.")
+    nueva = str(carpeta)
+    viejas = [r for r in rutas_guardadas(carpeta) if r != nueva]
+    if not viejas and rutas_guardadas(carpeta):
+        return ResultadoRuta(carpeta, [], [])
+    if not viejas:
+        raise ErrorProyecto("No encuentro la ruta antigua en el proyecto: no hay nada que actualizar.")
+    cambiados = []
+    for nombre in CON_RUTA:
+        archivo = carpeta / nombre
+        if not archivo.is_file():
+            continue
+        with open(archivo, encoding="utf-8", newline="") as f:  # keeps the file's own line endings
+            texto = f.read()
+        nuevo = texto
+        for vieja in viejas:
+            nuevo = nuevo.replace(vieja, nueva)
+        if nuevo != texto:
+            with open(archivo, "w", encoding="utf-8", newline="") as f:
+                f.write(nuevo)
+            cambiados.append(nombre)
+    ficha_path = carpeta / FICHA
+    if ficha_path.is_file():
+        datos = json.loads(ficha_path.read_text(encoding="utf-8"))
+        proyecto = datos.get("proyecto")
+        if isinstance(proyecto, dict) and (proyecto.get("ruta") != nueva or proyecto.get("carpeta") != carpeta.name):
+            proyecto["ruta"] = nueva
+            proyecto["carpeta"] = carpeta.name
+            ficha_path.write_text(json.dumps(datos, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            cambiados.append(FICHA.as_posix())
+    return ResultadoRuta(carpeta, cambiados, viejas)
+
+
 def main(argv=None) -> int:
     ajustes = cargar_ajustes()
     ap = argparse.ArgumentParser(description="Crea un proyecto nuevo a partir de PLANTILLA.")
-    ap.add_argument("--nombre", required=True)
-    ap.add_argument("--tipo", required=True, choices=list(TIPOS) + [t.lower() for t in TIPOS])
-    ap.add_argument("--destino", required=True)
+    ap.add_argument("--actualizar-ruta", metavar="CARPETA",
+                    help="carpeta de un proyecto que se ha movido: escribe en él su ruta nueva")
+    ap.add_argument("--nombre")
+    ap.add_argument("--tipo", choices=list(TIPOS) + [t.lower() for t in TIPOS])
+    ap.add_argument("--destino")
     ap.add_argument("--color", help="#RRGGBB; sin color = identidad original")
     ap.add_argument("--codex", action="store_true")
     ap.add_argument("--autor", default=ajustes.get("autor", ""))
     ap.add_argument("--github", default=ajustes.get("github", ""))
     a = ap.parse_args(argv)
+    if a.actualizar_ruta:
+        try:
+            r = actualizar_ruta(Path(a.actualizar_ruta))
+        except ErrorProyecto as exc:
+            print(f"Error: {exc}")
+            return 1
+        print(f"Ruta actualizada en {len(r.archivos)} archivos: {r.ruta}" if r.archivos
+              else f"La ruta ya está al día: {r.ruta}")
+        return 0
+    if not (a.nombre and a.tipo and a.destino):
+        ap.error("para crear un proyecto hacen falta --nombre, --tipo y --destino")
     try:
         r = crear_proyecto(Opciones(a.nombre, a.tipo, Path(a.destino), a.color, a.codex, autor=a.autor, github=a.github))
     except ErrorProyecto as exc:

@@ -3,7 +3,7 @@
 La lógica está en creador.py; aquí solo está la ventana. Mismo estilo que VideoFetch y
 StreamFetch: fondo grafito, un único color de acento y pasos numerados.
 
-Project:   Project Manager v1.1.0
+Project:   Project Manager v1.2.0
 Author:    Juan Bautista Galisteo Marqués (@juangalisteo)
 """
 import colorsys
@@ -126,11 +126,12 @@ class Button(tk.Canvas):
         "ghost": dict(bg=None, hover=FIELD, press=RAISED, fg=MUTED, border=None, off_bg=None, off_fg=FAINT),
     }
 
-    def __init__(self, parent, text, command, kind="secondary", height=40, padx=18):
+    def __init__(self, parent, text, command, kind="secondary", height=40, padx=18, font="button", radius=9):
         self.parent_bg = parent["bg"]
         super().__init__(parent, bg=self.parent_bg, highlightthickness=0, bd=0, cursor="hand2")
         self.text, self.command, self.kind = text, command, self.KINDS[kind]
         self.h, self.padx = px(height), px(padx)
+        self.font, self.radius = F[font], px(radius)  # small buttons: font="chip", radius=8 (as the ChatGPT toggle)
         self.state, self.hover, self.pressed = "normal", False, False
         self.min_w = 0  # never shrinks, so «Copiado ✓» does not move the layout
         self.bind("<Enter>", lambda e: self._set(hover=True))
@@ -153,7 +154,7 @@ class Button(tk.Canvas):
     def _draw(self):
         k = self.kind
         self.delete("all")
-        w = max(self.min_w, F["button"].measure(self.text) + 2 * self.padx)
+        w = max(self.min_w, self.font.measure(self.text) + 2 * self.padx)
         self.min_w = w
         tk.Canvas.configure(self, width=w, height=self.h)
         if self.state == "disabled":
@@ -166,8 +167,8 @@ class Button(tk.Canvas):
             bg, fg = k["bg"], k["fg"]
         bg = bg or self.parent_bg
         outline = k["border"] if k["border"] and self.state != "disabled" and not self.hover else bg
-        rounded_rect(self, 1, 1, w - 1, self.h - 1, px(9), fill=bg, outline=outline)
-        self.create_text(w / 2, self.h / 2, text=self.text, fill=fg, font=F["button"])
+        rounded_rect(self, 1, 1, w - 1, self.h - 1, self.radius, fill=bg, outline=outline)
+        self.create_text(w / 2, self.h / 2, text=self.text, fill=fg, font=self.font)
 
     def set_text(self, text):
         self.text = text
@@ -818,8 +819,13 @@ class App:
                   justify="left").pack(anchor="w", pady=(px(4), 0))
             return line
 
-        # 01 · Name
-        eyebrow(body, "01", "Nombre del proyecto").pack(anchor="w", pady=(0, px(10)))
+        # 01 · Name, with «Actualizar ruta» on the right (same size as the ChatGPT toggle, same look as «Examinar»)
+        top = tk.Frame(body, bg=SURFACE)
+        top.pack(fill="x", pady=(0, px(10)))
+        eyebrow(top, "01", "Nombre del proyecto").pack(side="left", anchor="s")
+        self.route_button = Button(top, "Actualizar ruta", self.update_route, height=28, padx=13,
+                                   font="chip", radius=8)
+        self.route_button.pack(side="right")
         # Same name box as VideoFetch: accent text and border, × to clear
         self.name_field = NameField(body, self.name, lambda e: self.create())
         self.name_field.pack(fill="x")
@@ -1020,6 +1026,30 @@ class App:
         if chosen:
             self.destination.set(str(Path(chosen)))
             self.update_destination()
+
+    def update_route(self):
+        """For a project that has been moved: writes its new path in the prompt, README and card."""
+        start = self.destination.get() or str(Path.home())
+        chosen = filedialog.askdirectory(initialdir=start, title="Elige la carpeta del proyecto que has movido")
+        if not chosen:
+            return
+        self.write_log(f"Actualizando la ruta de {Path(chosen)}")
+        try:
+            result = creador.actualizar_ruta(Path(chosen))
+        except creador.ErrorProyecto as exc:
+            self.fail(str(exc))
+            return
+        self.set_dot(SUCCESS)
+        if not result.archivos:
+            self.status.set(f"La ruta de {result.ruta.name} ya está al día · No hacía falta cambiar nada.")
+            self.write_log("La ruta ya estaba al día.")
+            return
+        count = len(result.archivos)
+        self.status.set(f"Ruta actualizada en {count} archivo{'s' if count != 1 else ''} · "
+                        f"{result.ruta.name} ya apunta a su carpeta nueva.")
+        self.write_log("Ruta antigua: " + " · ".join(result.viejas))
+        self.write_log(f"Ruta nueva: {result.ruta} · Cambiado en: " + ", ".join(result.archivos))
+        self.grow_if_needed()
 
     def create(self):
         options = creador.Opciones(

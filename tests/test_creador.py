@@ -165,6 +165,46 @@ class CreateTests(unittest.TestCase):
                     prompts.append(text.replace(str(r.ruta), "RUTA"))
             self.assertEqual(prompts[0], prompts[1], tipo)
 
+    def test_update_route(self):
+        """«Actualizar ruta»: after moving (and renaming) a project, its new path is written in the
+        prompt, the README and the card, and the old one is gone. A second run changes nothing."""
+        import shutil
+        for tipo in creador.TIPOS:
+            with tempfile.TemporaryDirectory() as tmp:
+                r = make(tmp, tipo=tipo, codex=True)
+                old = str(r.ruta)
+                moved = Path(tmp) / "OTRO_SITIO" / "NUEVO_NOMBRE"
+                moved.parent.mkdir()
+                shutil.move(old, moved)
+                result = creador.actualizar_ruta(moved)
+                new = str(moved.resolve())
+                self.assertEqual(result.viejas, [old], tipo)
+                self.assertIn("00_INICIO_CHAT.md", result.archivos)
+                for name in ["00_INICIO_CHAT.md", "README.md"]:
+                    text = (moved / name).read_text(encoding="utf-8")
+                    self.assertNotIn(old, text, f"{tipo}: {name}")
+                self.assertIn(new, (moved / "00_INICIO_CHAT.md").read_text(encoding="utf-8"))
+                if tipo != "PROYECTO":  # the Proyecto README is the GitHub page: it has no path
+                    self.assertIn(new, (moved / "README.md").read_text(encoding="utf-8"))
+                if tipo in creador.CON_FICHA:
+                    config = json.loads((moved / "00_CONFIG/00_PROJECT_CONFIG.json").read_text(encoding="utf-8"))
+                    self.assertEqual(config["proyecto"]["ruta"], new)
+                    self.assertEqual(config["proyecto"]["carpeta"], "NUEVO_NOMBRE")
+                self.assertEqual(creador.actualizar_ruta(moved).archivos, [], tipo)  # already up to date
+                self.check_clean(moved)
+
+    def test_update_route_errors(self):
+        """A folder that is not a Project Manager project, or does not exist, is not touched."""
+        with tempfile.TemporaryDirectory() as tmp:
+            other = Path(tmp) / "CARPETA_CUALQUIERA"
+            other.mkdir()
+            (other / "README.md").write_text("Hola", encoding="utf-8")
+            with self.assertRaises(creador.ErrorProyecto):
+                creador.actualizar_ruta(other)
+            self.assertEqual((other / "README.md").read_text(encoding="utf-8"), "Hola")
+            with self.assertRaises(creador.ErrorProyecto):
+                creador.actualizar_ruta(Path(tmp) / "NO_EXISTE")
+
     def test_errors_leave_nothing(self):
         with tempfile.TemporaryDirectory() as tmp:
             make(tmp)

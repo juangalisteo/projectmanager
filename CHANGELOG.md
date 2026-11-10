@@ -2,6 +2,14 @@
 
 Cambios importantes, de la versión más nueva a la más antigua. Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.2.0] · 2026-11-10
+
+### Añadido
+
+- Botón **«Actualizar ruta»**, arriba a la derecha de «01 · Nombre del proyecto», del tamaño del botón de ChatGPT y con el aspecto de «Examinar». Si mueves o cambias de nombre la carpeta de un proyecto, eliges la carpeta en su sitio nuevo y Project Manager escribe la ruta nueva en `00_INICIO_CHAT.md`, en `README.md` y en la ficha (`proyecto.ruta` y `proyecto.carpeta`). Si la ruta ya estaba bien o la carpeta no es un proyecto de Project Manager, avisa y no toca nada.
+- También desde la consola: `python APP\creador.py --actualizar-ruta "C:\nueva\ruta\MI_PROYECTO"`.
+- 15 pruebas automáticas: dos nuevas para «Actualizar ruta» (los tres tipos, con un proyecto movido y renombrado, y los casos en que no debe tocar nada).
+
 ## [1.1.0] · 2026-11-09
 
 ### Cambiado

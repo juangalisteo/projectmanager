@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/versi%C3%B3n-1.1.0-C7A15B?style=flat-square&labelColor=121214" alt="Versión 1.1.0">
+  <img src="https://img.shields.io/badge/versi%C3%B3n-1.2.0-C7A15B?style=flat-square&labelColor=121214" alt="Versión 1.2.0">
   <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-C7A15B?style=flat-square&labelColor=121214" alt="Windows 10 y 11">
   <img src="https://img.shields.io/badge/Python-3.10%2B-C7A15B?style=flat-square&labelColor=121214" alt="Python 3.10 o posterior">
   <img src="https://img.shields.io/badge/licencia-GPL--3.0-C7A15B?style=flat-square&labelColor=121214" alt="Licencia GPL-3.0">
@@ -56,6 +56,7 @@ Project Manager lo deja escrito desde el primer minuto. Cada proyecto nuevo trae
 | **Color principal** | Elige un color con el selector propio (cuadro de saturación y brillo, barra de tono y código), pulsa **↻** para uno al azar o usa el **Predeterminado**. Debajo se ve en vivo la paleta que sale de él. |
 | **Paleta desde un color** | De un solo color se calculan 13 tonos (fondo, texto, acento, recuadros, bordes…) con el contraste comprobado, para que el documento final se lea bien. |
 | **ChatGPT opcional** | El interruptor **ChatGPT** (verde = activado) añade las reglas y la bitácora de Codex. Claude va siempre. |
+| **Actualizar ruta** | Si mueves o cambias de nombre la carpeta de un proyecto, el botón **Actualizar ruta** escribe la ruta nueva en el prompt de arranque, el `README.md` y la ficha, de una vez. |
 | **Sin carpetas a medias** | El proyecto se crea primero en una carpeta temporal y solo recibe su nombre al final. Si algo falla, no queda nada a medias y la ventana dice qué ha pasado. |
 | **Actividad** | El botón *Ver actividad* muestra lo que hace el programa, con un icono para copiarlo. Si hay un error, se abre solo. |
 
@@ -92,11 +93,14 @@ Todos llevan `README.md`, `00_INICIO_CHAT.md` (el prompt de arranque), `AGENTS.m
 6. Pulsa **Crear proyecto**. Se abre la carpeta nueva.
 7. Pulsa **Prompt · IA** y pega el prompt como primer mensaje en un chat nuevo de Claude. También puedes adjuntar `00_INICIO_CHAT.md` tal cual. El `README.md` de cada proyecto (en Proyecto, `AGENT_AI/LEEME.md`) explica cómo empezar sin acceso a la carpeta.
 
+**Si mueves un proyecto de sitio:** pulsa **Actualizar ruta** (arriba a la derecha, junto a «01 · Nombre del proyecto») y elige la carpeta del proyecto en su sitio nuevo.
+
 También funciona desde la consola:
 
 ```bat
 python APP\creador.py --nombre "Mi proyecto" --tipo DOCUMENTO --destino "C:\ruta" --color "#2E7D6B"
 python APP\creador.py --nombre "Mi app" --tipo PROYECTO --destino "C:\ruta" --codex
+python APP\creador.py --actualizar-ruta "C:\nueva\ruta\MI_APP"
 ```
 
 > [!TIP]
@@ -175,7 +179,7 @@ Fondo grafito monocromo y un solo color de señal, el dorado. Es el mismo sistem
 - [x] Selector de color propio y paleta en vivo (v1.0.0)
 - [x] Pruebas automáticas del creador (v1.0.0)
 - [x] Prompt de arranque de un solo mensaje, listo para copiar o adjuntar (v1.1.0)
-- [ ] Botón «Actualizar ruta» para un proyecto que se ha movido de carpeta
+- [x] Botón «Actualizar ruta» para un proyecto que se ha movido de carpeta (v1.2.0)
 - [ ] GIF de la aplicación en marcha
 - [ ] Versión `.exe` que no necesite Python instalado
 
@@ -195,4 +199,4 @@ Las fuentes Inter del manual de estilo se distribuyen con su propia licencia, la
 
 Copyright © 2026 Juan Bautista Galisteo Marqués.
 
-<p align="center"><sub>Project Manager v1.1.0 · Juan Bautista Galisteo Marqués</sub></p>
+<p align="center"><sub>Project Manager v1.2.0 · Juan Bautista Galisteo Marqués</sub></p>
