@@ -11,7 +11,7 @@
 [[FIN]]
 - **Propietario ([AUTOR])**: decide el tema, el alcance y lo que entra en el documento, y aprueba cada entrega.
 - **Ciclo:** un chat, una tarea. Al cerrar, se actualiza `AGENT_AI/ESTADO.md` y, si hay una decisión nueva, este plan.
-- **Si el chat se alarga o se pierde:** se abre otro con el prompt A de `00_INICIO_CHAT.md`. El trabajo sigue porque todo está en estos archivos.
+- **Si el chat se alarga o se pierde:** se abre otro con `00_INICIO_CHAT.md`, pegado o adjunto entero. El trabajo sigue porque todo está en estos archivos.
 
 ## Objetivo
 

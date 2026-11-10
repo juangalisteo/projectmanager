@@ -120,7 +120,7 @@ class CreateTests(unittest.TestCase):
             for rel in ["AGENT_AI/CODEX/AGENT.md", "AGENT_AI/CODEX/BITACORA.md", "AGENT_AI/CODEX/PUENTE.md"]:
                 self.assertTrue((r.ruta / rel).exists(), rel)
             self.assertTrue((r.ruta / "AGENT_AI/CODEX/REPORTS").is_dir())
-            self.assertIn("## D. Codex", (r.ruta / "00_INICIO_CHAT.md").read_text(encoding="utf-8"))
+            self.assertIn("Codex", (r.ruta / "AGENT_AI/LEEME.md").read_text(encoding="utf-8"))
             self.check_clean(r.ruta)
 
     def test_general(self):
@@ -143,8 +143,27 @@ class CreateTests(unittest.TestCase):
             for rel in ["AGENT_AI/CLAUDE/BITACORA.md", "AGENT_AI/CODEX/AGENT.md", "AGENT_AI/CODEX/BITACORA.md"]:
                 self.assertTrue((r.ruta / rel).exists(), rel)
             self.assertIn("Codex", (r.ruta / "AGENTS.md").read_text(encoding="utf-8"))
-            self.assertIn("## C. Con Codex", (r.ruta / "00_INICIO_CHAT.md").read_text(encoding="utf-8"))
+            self.assertIn("Con Codex", (r.ruta / "README.md").read_text(encoding="utf-8"))
             self.check_clean(r.ruta)
+
+    def test_start_prompt(self):
+        """00_INICIO_CHAT.md is only the start prompt: no headings, no boxes, no guide, no Codex.
+        It is the same with ChatGPT on or off, and it carries the project's path."""
+        for tipo in creador.TIPOS:
+            prompts = []
+            for codex in (False, True):
+                with tempfile.TemporaryDirectory() as tmp:
+                    r = make(tmp, tipo=tipo, codex=codex)
+                    text = (r.ruta / "00_INICIO_CHAT.md").read_text(encoding="utf-8")
+                    self.assertTrue(text.startswith("Hola."), tipo)
+                    self.assertIn(str(r.ruta), text)
+                    self.assertIn("Pídeme acceso a la carpeta", text)
+                    self.assertIn("Qué hacer ahora", text)
+                    self.assertIn("Antes de cambiar nada", text)
+                    for banned in ("```", "Codex", "ChatGPT", "Copia el prompt", "\n#"):
+                        self.assertNotIn(banned, text, f"{tipo}: {banned}")
+                    prompts.append(text.replace(str(r.ruta), "RUTA"))
+            self.assertEqual(prompts[0], prompts[1], tipo)
 
     def test_errors_leave_nothing(self):
         with tempfile.TemporaryDirectory() as tmp:

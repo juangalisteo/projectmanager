@@ -264,7 +264,7 @@ Se dejan tal cual, sin número, porque los programas y las webs los buscan con e
 
 Nombres fijos e iguales en todos los proyectos, porque los agentes y los prompts los buscan por su nombre exacto:
 
-    00_INICIO_CHAT.md   → prompts para empezar un chat (lleva 00 por ser la base)
+    00_INICIO_CHAT.md   → prompt para empezar un chat (lleva 00 por ser la base)
     AGENT_AI/           → memoria del trabajo con la IA, y todo lo que hay dentro:
                           ESTADO.md, LEEME.md, TRABAJO/ (PLAN.md, IDEAS_FUTURAS.md),
                           CLAUDE/ y CODEX/ (AGENT.md, BITACORA.md, PUENTE.md, REPORTS/)

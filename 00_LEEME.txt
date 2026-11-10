@@ -1,4 +1,4 @@
-PROJECT MANAGER v1.0.0 · CREA PROYECTOS ORDENADOS PARA TRABAJAR CON IA
+PROJECT MANAGER v1.1.0 · CREA PROYECTOS ORDENADOS PARA TRABAJAR CON IA
 
 PARA QUÉ SIRVE
 Crea en un clic la carpeta de un proyecto nuevo con todo lo necesario para
@@ -36,15 +36,16 @@ CÓMO SE USA
    próxima vez.
 7. Pulsa "Crear proyecto". Se abre la carpeta nueva.
 8. Pulsa "Prompt · IA" para copiar el prompt de inicio y pégalo como primer
-   mensaje en un chat nuevo de Claude (app de escritorio). Claude pide acceso
-   a la carpeta y empieza.
+   mensaje en un chat nuevo de Claude (app de escritorio), o adjunta
+   00_INICIO_CHAT.md tal cual. Claude pide acceso a la carpeta, lee las
+   reglas y el estado, y te dice dónde estáis.
 
 QUÉ RECIBES EN CADA PROYECTO
 Todos llevan:
   README.md            Ficha del proyecto y cómo empezar (en Proyecto, la
                        presentación para GitHub)
-  00_INICIO_CHAT.md    Prompts para empezar un chat (el botón "Prompt · IA"
-                       copia el primero)
+  00_INICIO_CHAT.md    Prompt de arranque: solo el mensaje, para copiarlo o
+                       adjuntarlo entero (el botón "Prompt · IA" lo copia)
   AGENTS.md            Reglas para los agentes de IA
   00_CONFIG\           Reglas de escritura (01_WRITING_RULES.md) y normas de
                        nombres (02_NAMING.md)

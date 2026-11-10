@@ -2,6 +2,17 @@
 
 Cambios importantes, de la versión más nueva a la más antigua. Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.1.0] · 2026-11-09
+
+### Cambiado
+
+- `00_INICIO_CHAT.md` lleva ahora **solo el prompt de arranque**, sin títulos, recuadros ni explicaciones. Se copia o se adjunta entero en un chat nuevo y Claude sabe qué hacer: pide acceso a la carpeta, lee las reglas y el estado, dice en tres líneas dónde estamos y espera. Antes mezclaba una guía con cuatro prompts y el chat no sabía cuál seguir.
+- El prompt dice también cómo trabajar con el propietario: explicar los cambios y esperar su sí, entregar archivos completos y marcar los archivos antiguos que haya que borrar.
+- Se quitan los prompts de arranque de Codex y del ejecutor (Claude Code): los dos cargan sus reglas solos al abrir la carpeta (`AGENTS.md` y `CLAUDE.md`).
+- El prompt para usar Claude sin acceso a la carpeta, con la lista de archivos que hay que adjuntar, pasa al `README.md` de General y Documento, y a `AGENT_AI/LEEME.md` en Proyecto (que no se sube a GitHub).
+- El botón «Prompt · IA» copia `00_INICIO_CHAT.md` entero.
+- 13 pruebas automáticas: una nueva comprueba que el prompt de arranque de los tres tipos es solo el mensaje, con la ruta y sin Codex.
+
 ## [1.0.0] · 2026-11-07
 
 Primera versión publicada.

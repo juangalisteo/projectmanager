@@ -15,4 +15,4 @@ Documento recién creado con Project Manager (color principal `[COLOR]`). Todav�
 
 ## Siguiente paso
 
-Abrir un chat con el prompt A de `00_INICIO_CHAT.md`, completar la ficha y escribir el índice en `AGENT_AI/TRABAJO/PLAN.md`.
+Abrir un chat nuevo de Claude con `00_INICIO_CHAT.md` (pegado o adjunto entero), completar la ficha y escribir el índice en `AGENT_AI/TRABAJO/PLAN.md`.

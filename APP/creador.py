@@ -15,7 +15,7 @@ Qué hace:
 Lo crea todo primero en una carpeta temporal y solo al final le pone su nombre: si algo
 falla, no queda una carpeta a medias.
 
-Project:   Project Manager v1.0.0
+Project:   Project Manager v1.1.0
 Author:    Juan Bautista Galisteo Marqués (@juangalisteo)
 """
 from __future__ import annotations
@@ -38,7 +38,7 @@ APP = Path(__file__).resolve().parent
 ROOT = APP.parent
 PLANTILLA = ROOT / "PLANTILLA"
 SETTINGS = APP / "projectmanager_ajustes.json"
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 TIPOS = {
     "DOCUMENTO": "Documento",

@@ -1,6 +1,6 @@
 # [PROYECTO]
 
-> Presentación del programa. Este archivo es el que se ve en GitHub: el asesor lo completa en la fase de documentación del plan. Las instrucciones para trabajar con la IA están en `00_INICIO_CHAT.md`, que no se sube a GitHub.
+> Presentación del programa. Este archivo es el que se ve en GitHub: el asesor lo completa en la fase de documentación del plan. El prompt para empezar a trabajar con la IA está en `00_INICIO_CHAT.md` y la explicación de cada chat en `AGENT_AI/LEEME.md`; ninguno de los dos se sube a GitHub.
 
 ## Qué hace
 

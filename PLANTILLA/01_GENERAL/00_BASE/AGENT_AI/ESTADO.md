@@ -18,7 +18,7 @@ Pendiente de definir en el primer chat.
 
 ## Siguiente paso
 
-Abrir un chat con el prompt A de `00_INICIO_CHAT.md`.
+Abrir un chat nuevo de Claude y pegar o adjuntar entero `00_INICIO_CHAT.md`.
 
 ## Ideas para más adelante
 

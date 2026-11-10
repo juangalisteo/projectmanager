@@ -5,7 +5,7 @@ Las reglas comunes están en `AGENTS.md` (raíz) y no se repiten aquí.
 ## Carga
 
 - `CLAUDE.md` (raíz) importa `AGENTS.md` y este archivo. Claude Code los carga solo al abrir la carpeta.
-- En la app de escritorio, el prompt A de `00_INICIO_CHAT.md` dice qué leer al empezar.
+- En la app de escritorio, el asesor empieza con `00_INICIO_CHAT.md` (el prompt de arranque, pegado o adjunto entero), que dice qué leer.
 
 ## Archivos propios
 

@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/versi%C3%B3n-1.0.0-C7A15B?style=flat-square&labelColor=121214" alt="Versión 1.0.0">
+  <img src="https://img.shields.io/badge/versi%C3%B3n-1.1.0-C7A15B?style=flat-square&labelColor=121214" alt="Versión 1.1.0">
   <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-C7A15B?style=flat-square&labelColor=121214" alt="Windows 10 y 11">
   <img src="https://img.shields.io/badge/Python-3.10%2B-C7A15B?style=flat-square&labelColor=121214" alt="Python 3.10 o posterior">
   <img src="https://img.shields.io/badge/licencia-GPL--3.0-C7A15B?style=flat-square&labelColor=121214" alt="Licencia GPL-3.0">
@@ -50,7 +50,7 @@ Project Manager lo deja escrito desde el primer minuto. Cada proyecto nuevo trae
 | | |
 |---|---|
 | **Tres tipos** | **Documento**, **Proyecto** y **General**, de lo más completo a lo más sencillo. Cada uno trae solo lo que necesita. |
-| **Prompt de inicio** | El botón **Prompt · IA** copia el primer mensaje para Claude, con la ruta del proyecto ya escrita. Se pega en un chat nuevo y la IA empieza. |
+| **Prompt de arranque** | `00_INICIO_CHAT.md` lleva solo el primer mensaje para Claude, con la ruta del proyecto ya escrita: se copia o se adjunta entero en un chat nuevo y la IA sabe qué hacer. El botón **Prompt · IA** lo copia. |
 | **Reglas para la IA** | `AGENTS.md` con las reglas de trabajo, las **normas de nombres** de carpetas y archivos y las **reglas de escritura** (basadas en la guía de Wikipedia sobre los rasgos del texto escrito por IA). |
 | **Memoria en archivos** | `AGENT_AI/ESTADO.md` dice dónde se quedó el trabajo y qué sigue. Los tipos Documento y Proyecto añaden plan y bitácora. |
 | **Color principal** | Elige un color con el selector propio (cuadro de saturación y brillo, barra de tono y código), pulsa **↻** para uno al azar o usa el **Predeterminado**. Debajo se ve en vivo la paleta que sale de él. |
@@ -67,7 +67,7 @@ Project Manager lo deja escrito desde el primer minuto. Cada proyecto nuevo trae
 | **Proyecto** | Software, aplicaciones, páginas web y desarrollo. | Lo necesario para Git y GitHub: `README.md`, `CHANGELOG.md`, `.gitignore`, `LICENSE` (GPL-3.0), `CLAUDE.md`, guía de prompts, `docs/`, `tests/` y `AGENT_AI/` completo, con asesor (app de escritorio) y ejecutor (Claude Code) separados. |
 | **General** | Cualquier otro trabajo. | Lo mínimo para empezar: reglas, estado y la carpeta `01_WORK/`. |
 
-Todos llevan `README.md`, `00_INICIO_CHAT.md`, `AGENTS.md`, `00_CONFIG/` (reglas de escritura y normas de nombres) y `AGENT_AI/ESTADO.md`.
+Todos llevan `README.md`, `00_INICIO_CHAT.md` (el prompt de arranque), `AGENTS.md`, `00_CONFIG/` (reglas de escritura y normas de nombres) y `AGENT_AI/ESTADO.md`.
 
 ## Requisitos
 
@@ -90,7 +90,7 @@ Todos llevan `README.md`, `00_INICIO_CHAT.md`, `AGENTS.md`, `00_CONFIG/` (reglas
 4. **04 · Asistentes**: Claude va siempre. Activa **ChatGPT** si también trabajas con él.
 5. **05 · Carpeta de destino**: dónde se creará el proyecto. Se recuerda para la próxima vez.
 6. Pulsa **Crear proyecto**. Se abre la carpeta nueva.
-7. Pulsa **Prompt · IA** y pega el prompt como primer mensaje en un chat nuevo de Claude.
+7. Pulsa **Prompt · IA** y pega el prompt como primer mensaje en un chat nuevo de Claude. También puedes adjuntar `00_INICIO_CHAT.md` tal cual. El `README.md` de cada proyecto (en Proyecto, `AGENT_AI/LEEME.md`) explica cómo empezar sin acceso a la carpeta.
 
 También funciona desde la consola:
 
@@ -174,6 +174,7 @@ Fondo grafito monocromo y un solo color de señal, el dorado. Es el mismo sistem
 - [x] Tres tipos de proyecto: Documento, Proyecto y General (v1.0.0)
 - [x] Selector de color propio y paleta en vivo (v1.0.0)
 - [x] Pruebas automáticas del creador (v1.0.0)
+- [x] Prompt de arranque de un solo mensaje, listo para copiar o adjuntar (v1.1.0)
 - [ ] Botón «Actualizar ruta» para un proyecto que se ha movido de carpeta
 - [ ] GIF de la aplicación en marcha
 - [ ] Versión `.exe` que no necesite Python instalado
@@ -194,4 +195,4 @@ Las fuentes Inter del manual de estilo se distribuyen con su propia licencia, la
 
 Copyright © 2026 Juan Bautista Galisteo Marqués.
 
-<p align="center"><sub>Project Manager v1.0.0 · Juan Bautista Galisteo Marqués</sub></p>
+<p align="center"><sub>Project Manager v1.1.0 · Juan Bautista Galisteo Marqués</sub></p>

@@ -3,7 +3,7 @@
 La lógica está en creador.py; aquí solo está la ventana. Mismo estilo que VideoFetch y
 StreamFetch: fondo grafito, un único color de acento y pasos numerados.
 
-Project:   Project Manager v1.0.0
+Project:   Project Manager v1.1.0
 Author:    Juan Bautista Galisteo Marqués (@juangalisteo)
 """
 import colorsys
@@ -751,11 +751,9 @@ def open_folder(path):
 
 
 def first_prompt(project):
-    """Text of prompt A (first ```text block) of 00_INICIO_CHAT.md."""
+    """The start prompt: 00_INICIO_CHAT.md holds only the prompt, so it is copied whole."""
     try:
-        text = (Path(project) / "00_INICIO_CHAT.md").read_text(encoding="utf-8")
-        match = re.search(r"```text\n(.*?)```", text, re.S)
-        return match[1].strip() if match else ""
+        return (Path(project) / "00_INICIO_CHAT.md").read_text(encoding="utf-8").strip()
     except Exception:
         return ""
 

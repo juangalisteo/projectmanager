@@ -15,4 +15,4 @@ Proyecto recién creado con Project Manager. Todavía no hay código ni reposito
 
 ## Siguiente paso
 
-Abrir un chat con el asesor (prompt A de `00_INICIO_CHAT.md`), completar la ficha y diseñar juntos la primera versión: qué hace el programa, con qué tecnología y en qué fases. Después, `git init` y el primer commit los hace el ejecutor.
+Abrir un chat con el asesor (pegar o adjuntar entero `00_INICIO_CHAT.md`), completar la ficha y diseñar juntos la primera versión: qué hace el programa, con qué tecnología y en qué fases. Después, `git init` y el primer commit los hace el ejecutor.
