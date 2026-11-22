@@ -3,7 +3,7 @@
 La lógica está en creador.py; aquí solo está la ventana. Mismo estilo que VideoFetch y
 StreamFetch: fondo grafito, un único color de acento y pasos numerados.
 
-Project:   Project Manager v1.2.0
+Project:   Project Manager v1.3.0
 Author:    Juan Bautista Galisteo Marqués (@juangalisteo)
 """
 import colorsys
@@ -552,11 +552,13 @@ class Chip(tk.Canvas):
 
 
 class Segmented(tk.Canvas):
-    """Segmented selector: the chosen option is highlighted in the accent colour."""
+    """Segmented selector: the chosen option is highlighted in the accent colour.
+    set_state("disabled") greys it out and ignores clicks (as the disabled buttons)."""
 
     def __init__(self, parent, options, index=0, command=None, gap=0):
         super().__init__(parent, bg=parent["bg"], highlightthickness=0, bd=0, cursor="hand2")
         self.options, self.index, self.command, self.hovered = options, index, command, None
+        self.state = "normal"
         self.font, self.inset, self.h, self.radius = F["button"], px(4), px(40), px(11)
         self.gap = px(gap)  # gap > 0: separate buttons instead of one joined bar
         widest = max(self.font.measure(o) for o in options) + px(34)
@@ -577,11 +579,15 @@ class Segmented(tk.Canvas):
         return None
 
     def _hover(self, index):
+        if self.state != "normal":
+            index = None
         if index != self.hovered:
             self.hovered = index
             self._draw()
 
     def _click(self, event):
+        if self.state != "normal":
+            return
         index = self._hit(event.x)
         if index is not None and index != self.index:
             self.index = index
@@ -594,8 +600,13 @@ class Segmented(tk.Canvas):
         if not self.gap:
             rounded_rect(self, 1, 1, self.w - 1, self.h - 1, self.radius, fill=FIELD, outline=BORDER)
         left = self.inset
+        off = self.state != "normal"
         for i, (text, width) in enumerate(zip(self.options, self.widths)):
-            if i == self.index:
+            if off:  # disabled: grey and without the accent colour
+                rounded_rect(self, left, self.inset, left + width, self.h - self.inset, self.radius - px(3),
+                             fill=RAISED if i == self.index else FIELD, outline=BORDER)
+                color = FAINT
+            elif i == self.index:
                 rounded_rect(self, left, self.inset, left + width, self.h - self.inset, self.radius - px(3),
                              fill=ACCENT, outline=ACCENT)
                 color = BG
@@ -606,6 +617,12 @@ class Segmented(tk.Canvas):
                 color = TEXT if i == self.hovered else MUTED
             self.create_text(left + width / 2, self.h / 2, text=text, fill=color, font=self.font)
             left += width + self.gap
+
+    def set_state(self, state):
+        if state != self.state:
+            self.state, self.hovered = state, None
+            self.configure(cursor="hand2" if state == "normal" else "arrow")
+            self._draw()
 
 
 class Toggle(tk.Canvas):
@@ -648,6 +665,12 @@ class Toggle(tk.Canvas):
             color = look["hover"] if self.hover else look["text"]
         rounded_rect(self, 1, 1, self.w - 1, self.h - 1, px(8), fill=fill, outline=outline)
         self.create_text(self.w / 2, self.h / 2, text=self.text, fill=color, font=self.font)
+
+    def set_state(self, state):
+        if state != self.state:
+            self.state = state
+            self.configure(cursor="hand2" if state == "normal" else "arrow")
+            self._draw()
 
 
 def make_logo(parent):
@@ -844,6 +867,9 @@ class App:
         self.color_mode = Segmented(controls, ["Color", "Predeterminado"],
                                     index=1 if self.use_original else 0, command=self.on_color_mode, gap=10)
         self.color_mode.pack(side="right")
+        # ★ next to «Color», as the ChatGPT toggle: red = general manual, green = «general + imágenes»
+        self.star = Toggle(controls, "★", bool(self.settings.get("imagenes", False)), command=self.on_star)
+        self.star.pack(side="right", padx=(0, px(6)))
         self.color_row = tk.Frame(body, bg=SURFACE)
         self.color_row.pack(fill="x", pady=(px(14), 0))
         # ↻ random colour (only in «Color» mode), the colour box (click = choose) and its code
@@ -969,6 +995,15 @@ class App:
     def on_type(self, index):
         self.type_index = index
         self.type_hint.set(TYPE_HINTS[TYPE_KEYS[index]])
+        self.update_color()  # «Color principal» only works with Documento
+
+    def is_document(self):
+        return TYPE_KEYS[self.type_index] == "DOCUMENTO"
+
+    def on_star(self, value):
+        manual = "general + imágenes" if value else "general"
+        self.status.set(f"El proyecto saldrá con el manual {manual}.")
+        self.write_log(f"Manual de estilo: {manual}.")
 
     def on_color_mode(self, index):
         self.use_original = index == 1
@@ -976,6 +1011,22 @@ class App:
 
     def update_color(self):
         colors = None
+        if not self.is_document():
+            # Proyecto and General: section 03 is locked (grey, no clicks) and they use the default palette
+            self.color_hint.set("Solo con Documento")
+            self.color_mode.set_state("disabled")
+            self.star.set_state("disabled")
+            self.swatch.delete("all")
+            size = px(44)
+            rounded_rect(self.swatch, 1, 1, size - 1, size - 1, px(10), fill=FIELD, outline=BORDER)
+            self.swatch.configure(cursor="arrow")
+            self.palette_strip.show(None)
+            self.hex_entry.configure(state="disabled", textvariable=self.default_hex)
+            if self.random_button.winfo_manager():
+                self.random_button.pack_forget()
+            return
+        self.color_mode.set_state("normal")
+        self.star.set_state("normal")
         if self.use_original:
             value, ok = creador.ORIGINAL_COLOR, True
             colors = creador.paleta(None)
@@ -984,7 +1035,7 @@ class App:
             try:
                 value, ok = creador.color_valido(self.color.get()), True
                 colors = creador.paleta(value)
-                self.color_hint.set("Pulsa ↻ para elegir un color aleatorio, o el cuadro para elegirlo tú.")
+                self.color_hint.set("Pulsa ↻ para elegir un color aleatorio.")
             except Exception:
                 value, ok = "", False
                 self.color_hint.set("Escribe el color como #RRGGBB o pulsa el cuadro para elegirlo.")
@@ -1012,7 +1063,7 @@ class App:
 
     # ── Actions ──
     def pick_color(self):
-        if self.use_original:
+        if self.use_original or not self.is_document():
             return
         try:
             start = creador.color_valido(self.color.get())
@@ -1056,8 +1107,9 @@ class App:
             nombre=self.name.get(),
             tipo=TYPE_KEYS[self.type_index],
             destino=Path(self.destination.get()) if self.destination.get() else Path(""),
-            color=None if self.use_original else self.color.get(),
+            color=None if (self.use_original or not self.is_document()) else self.color.get(),
             codex=self.codex.value,
+            imagenes=self.is_document() and self.star.value,
             autor=self.settings.get("autor", ""),
             github=self.settings.get("github", ""),
         )
@@ -1068,7 +1120,9 @@ class App:
         self.status.set("Creando el proyecto…")
         self.write_log(f"Creando «{options.nombre.strip()}» · tipo {options.tipo.capitalize()} · "
                        f"{'identidad original' if options.color is None else 'color ' + str(options.color)} · "
-                       f"{'Claude y ChatGPT' if options.codex else 'Claude'} · destino {options.destino}")
+                       f"{'Claude y ChatGPT' if options.codex else 'Claude'} · "
+                       + (f"manual {'general + imágenes' if options.imagenes else 'general'} · " if self.is_document() else "")
+                       + f"destino {options.destino}")
         self.set_dot(ACCENT)
         self.root.update_idletasks()
         try:
@@ -1080,7 +1134,7 @@ class App:
             self.create_button.set_state("normal")
         creador.guardar_ajustes(destino=self.destination.get(), color=self.color.get(),
                                 identidad_original=self.use_original,
-                                codex=self.codex.value)
+                                codex=self.codex.value, imagenes=self.star.value)
         self.last_project = result.ruta
         self.open_button.set_state("normal")
         self.copy_button.set_state("normal")

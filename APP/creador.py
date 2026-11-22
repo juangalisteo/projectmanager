@@ -2,7 +2,7 @@
 
 La ventana (interfaz.py) usa este archivo. También se puede usar desde la consola:
 
-    python APP/creador.py --nombre "Mi proyecto" --tipo DOCUMENTO --destino "C:\\ruta" --color "#2E7D6B"
+    python APP/creador.py --nombre "Mi proyecto" --tipo DOCUMENTO --destino "C:\\ruta" --color "#2E7D6B" --imagenes
 
 Qué hace:
 1. Convierte el nombre en un nombre de carpeta según las normas (MAYÚSCULAS, _, sin tildes).
@@ -10,6 +10,8 @@ Qué hace:
 3. Cambia las etiquetas ([PROYECTO], [RUTA], [COLOR]…) por sus valores y quita los
    bloques [[SI …]] … [[FIN]] que no tocan.
 4. Escribe la ficha 00_CONFIG/00_PROJECT_CONFIG.json con la paleta calculada.
+   El color principal solo cuenta en Documento; Proyecto y General salen con el predeterminado.
+   Un Documento lleva un solo manual: el general o, con --imagenes, el de «general + imágenes».
 5. Comprueba que no queda ninguna etiqueta sin rellenar.
 
 Lo crea todo primero en una carpeta temporal y solo al final le pone su nombre: si algo
@@ -19,7 +21,7 @@ También actualiza la ruta de un proyecto que se ha movido de carpeta:
 
     python APP/creador.py --actualizar-ruta "C:\\nueva\\ruta\\MI_PROYECTO"
 
-Project:   Project Manager v1.2.0
+Project:   Project Manager v1.3.0
 Author:    Juan Bautista Galisteo Marqués (@juangalisteo)
 """
 from __future__ import annotations
@@ -42,7 +44,7 @@ APP = Path(__file__).resolve().parent
 ROOT = APP.parent
 PLANTILLA = ROOT / "PLANTILLA"
 SETTINGS = APP / "projectmanager_ajustes.json"
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 
 TIPOS = {
     "DOCUMENTO": "Documento",
@@ -67,6 +69,8 @@ PIEZAS = [
     ("02_DOCUMENTO/00_BASE", "", True, lambda o: o.tipo == "DOCUMENTO"),
     ("02_DOCUMENTO/01_CODEX", "", True, lambda o: o.tipo == "DOCUMENTO" and o.codex),
     ("00_MODULOS/MANUAL", "04_STYLE_MANUAL", False, lambda o: o.tipo == "DOCUMENTO"),
+    # «General + imágenes» (star on): its files go over the general manual, so the project keeps one manual.
+    ("00_MODULOS/MANUAL_IMAGENES", "04_STYLE_MANUAL", False, lambda o: o.tipo == "DOCUMENTO" and o.imagenes),
     # Writing rules and naming rules, copied as they are (all types)
     ("00_MODULOS/ESCRITURA/02_WRITING_RULES.md", "00_CONFIG/01_WRITING_RULES.md", False,
      lambda o: True),
@@ -100,8 +104,9 @@ class Opciones:
     nombre: str
     tipo: str
     destino: Path
-    color: str | None = None          # None = identidad original
+    color: str | None = None          # None = identidad original (solo cuenta en Documento)
     codex: bool = False
+    imagenes: bool = False            # Documento: manual «general + imágenes» en lugar del general
     autor: str = ""
     github: str = ""
     fecha: datetime.date = field(default_factory=datetime.date.today)
@@ -212,6 +217,8 @@ def activas(o: Opciones) -> set[str]:
     claves = {o.tipo}
     if o.codex:
         claves.add("CODEX")
+    if o.imagenes:
+        claves.add("IMAGENES")
     return claves
 
 
@@ -260,6 +267,7 @@ def ficha(o: Opciones, carpeta: str, ruta: Path) -> dict:
         "modulos": {
             "escritura": True,
             "documentos_maquetados": o.tipo == "DOCUMENTO",
+            "imagenes": o.imagenes,
             "agentes": ["CLAUDE"] + (["CODEX"] if o.codex else []),
         },
         "identity": {
@@ -280,6 +288,7 @@ def ficha(o: Opciones, carpeta: str, ruta: Path) -> dict:
             },
             "cabecera": {"nombre": o.nombre.strip().upper(), "icono": "grid", "logo_path": None},
             "manual": "04_STYLE_MANUAL/00_MANUAL_DE_ESTILO.pdf",
+            "manual_version": "general_imagenes" if o.imagenes else "general",
         }
     datos["estado"] = {"decisiones": [], "pendientes": ["Completar la ficha"], "ultima_revision": None}
     return datos
@@ -299,12 +308,14 @@ def comprobar_restos(carpeta: Path, procesados: list[Path]) -> None:
 def crear_proyecto(o: Opciones) -> Resultado:
     o.tipo = o.tipo.upper()
     if o.tipo not in TIPOS:
-        raise ErrorProyecto("Elige un tipo de proyecto: Documento, Programa o General.")
+        raise ErrorProyecto("Elige un tipo de proyecto: Documento, Proyecto o General.")
     if not o.nombre.strip():
         raise ErrorProyecto("Escribe el nombre del proyecto.")
     carpeta = nombre_carpeta(o.nombre)
     if not carpeta:
         raise ErrorProyecto("El nombre tiene que llevar al menos una letra o un número.")
+    if o.tipo != "DOCUMENTO":  # colour and the images manual only apply to Documento
+        o.color, o.imagenes = None, False
     if o.color:
         o.color = color_valido(o.color)
     destino = Path(o.destino).expanduser()
@@ -444,7 +455,8 @@ def main(argv=None) -> int:
     ap.add_argument("--nombre")
     ap.add_argument("--tipo", choices=list(TIPOS) + [t.lower() for t in TIPOS])
     ap.add_argument("--destino")
-    ap.add_argument("--color", help="#RRGGBB; sin color = identidad original")
+    ap.add_argument("--color", help="#RRGGBB; sin color = identidad original (solo en DOCUMENTO)")
+    ap.add_argument("--imagenes", action="store_true", help="DOCUMENTO: manual «general + imágenes»")
     ap.add_argument("--codex", action="store_true")
     ap.add_argument("--autor", default=ajustes.get("autor", ""))
     ap.add_argument("--github", default=ajustes.get("github", ""))
@@ -461,7 +473,8 @@ def main(argv=None) -> int:
     if not (a.nombre and a.tipo and a.destino):
         ap.error("para crear un proyecto hacen falta --nombre, --tipo y --destino")
     try:
-        r = crear_proyecto(Opciones(a.nombre, a.tipo, Path(a.destino), a.color, a.codex, autor=a.autor, github=a.github))
+        r = crear_proyecto(Opciones(a.nombre, a.tipo, Path(a.destino), a.color, a.codex, a.imagenes,
+                                    autor=a.autor, github=a.github))
     except ErrorProyecto as exc:
         print(f"Error: {exc}")
         return 1

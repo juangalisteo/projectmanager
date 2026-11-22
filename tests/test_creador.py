@@ -83,6 +83,70 @@ class CreateTests(unittest.TestCase):
             self.assertIn(str(r.ruta), (r.ruta / "00_INICIO_CHAT.md").read_text(encoding="utf-8"))
             self.check_clean(r.ruta)
 
+    def test_document_general_manual(self):
+        """Star off (default): the project gets the general manual, without the images part."""
+        with tempfile.TemporaryDirectory() as tmp:
+            r = make(tmp)
+            manual = r.ruta / "04_STYLE_MANUAL"
+            self.assertNotIn("## 11 / Imágenes", (manual / "01_MANUAL_DE_ESTILO.md").read_text(encoding="utf-8"))
+            self.assertFalse((manual / "02_PROMPTS/03_CREAR_IMAGEN_SVG.md").exists())
+            self.assertFalse((manual / "03_SOURCE/05_IMAGE_KIT").exists())
+            config = json.loads((r.ruta / "00_CONFIG/00_PROJECT_CONFIG.json").read_text(encoding="utf-8"))
+            self.assertEqual(config["documento"]["manual_version"], "general")
+            self.assertFalse(config["modulos"]["imagenes"])
+            self.assertNotIn("03_CREAR_IMAGEN_SVG", (r.ruta / "AGENTS.md").read_text(encoding="utf-8"))
+
+    def test_document_images_manual(self):
+        """Star on: one manual, the «general + images» version, with its prompts, fonts and image kit."""
+        with tempfile.TemporaryDirectory() as tmp:
+            r = make(tmp, color="#2E7D6B", imagenes=True)
+            manual = r.ruta / "04_STYLE_MANUAL"
+            text = (manual / "01_MANUAL_DE_ESTILO.md").read_text(encoding="utf-8")
+            self.assertIn("## 11 / Imágenes", text)
+            self.assertIn("## 16 / Imágenes: generar con IA", text)
+            for rel in ["00_MANUAL_DE_ESTILO.pdf", "02_PROMPTS/01_APLICAR_MANUAL.md", "02_PROMPTS/02_REVISION_ENTREGA.md",
+                        "02_PROMPTS/03_CREAR_IMAGEN_SVG.md", "02_PROMPTS/04_GENERADOR_IMAGENES.md",
+                        "02_PROMPTS/05_REVISION_IMAGEN.md", "03_SOURCE/01_PALETTE.py", "03_SOURCE/02_BUILD_MANUAL.py",
+                        "03_SOURCE/03_FONTS/FreeSerifBold.ttf", "03_SOURCE/03_FONTS/Inter-Bold.ttf",
+                        "03_SOURCE/04_IMAGES/02_STYLE_MODEL.png", "03_SOURCE/05_IMAGE_KIT/01_BASE_PIECES_VECTOR.svg",
+                        "03_SOURCE/05_IMAGE_KIT/07_BASE_SHEET_16X9_VECTOR.svg"]:
+                self.assertTrue((manual / rel).exists(), rel)
+            self.assertEqual(len(list(manual.glob("*.pdf"))), 1)  # one manual only
+            config = json.loads((r.ruta / "00_CONFIG/00_PROJECT_CONFIG.json").read_text(encoding="utf-8"))
+            self.assertEqual(config["documento"]["manual_version"], "general_imagenes")
+            self.assertTrue(config["modulos"]["imagenes"])
+            self.assertEqual(config["identity"]["colors"]["accent"], "#2E7D6B")
+            self.assertIn("03_CREAR_IMAGEN_SVG", (r.ruta / "AGENTS.md").read_text(encoding="utf-8"))
+            self.check_clean(r.ruta)
+
+    def test_images_manual_keeps_general(self):
+        """The «general + images» manual starts with the whole general manual, unchanged."""
+        modules = creador.PLANTILLA / "00_MODULOS"
+        general = (modules / "MANUAL/01_MANUAL_DE_ESTILO.md").read_text(encoding="utf-8").rstrip()
+        images = (modules / "MANUAL_IMAGENES/01_MANUAL_DE_ESTILO.md").read_text(encoding="utf-8")
+        closing = general.splitlines()[-1]
+        self.assertTrue(closing.startswith("@@closing_page"))
+        self.assertTrue(images.startswith(general[: -len(closing)].rstrip()))
+        # each manual has its own final page; the images one ends with the square, compass and G
+        self.assertTrue(images.rstrip().splitlines()[-1].startswith("@@closing_page"))
+        self.assertTrue(images.rstrip().endswith("| escuadra"))
+        # the same generator builds both manuals
+        self.assertEqual((modules / "MANUAL/03_SOURCE/02_BUILD_MANUAL.py").read_bytes(),
+                         (modules / "MANUAL_IMAGENES/03_SOURCE/02_BUILD_MANUAL.py").read_bytes())
+
+    def test_colour_only_for_document(self):
+        """Proyecto and General ignore the colour and the star: default palette, no style manual."""
+        with tempfile.TemporaryDirectory() as tmp:
+            r = make(tmp, tipo="PROYECTO", color="#2E7D6B", imagenes=True)
+            config = json.loads((r.ruta / "00_CONFIG/00_PROJECT_CONFIG.json").read_text(encoding="utf-8"))
+            self.assertEqual(config["identity"]["palette_mode"], "identidad_original")
+            self.assertEqual(config["identity"]["primary_color"], creador.ORIGINAL_COLOR)
+            self.assertFalse(config["modulos"]["imagenes"])
+            self.assertFalse((r.ruta / "04_STYLE_MANUAL").exists())
+            g = make(tmp, nombre="General de prueba", tipo="GENERAL", color="#2E7D6B", imagenes=True)
+            self.assertFalse((g.ruta / "04_STYLE_MANUAL").exists())
+            self.assertNotIn("#2E7D6B", "".join(p.read_text(encoding="utf-8") for p in text_files(g.ruta)))
+
     def test_document_with_chatgpt(self):
         with tempfile.TemporaryDirectory() as tmp:
             r = make(tmp, codex=True)

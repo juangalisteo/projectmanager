@@ -76,7 +76,12 @@ No necesita prompt de arranque: al abrirlo en esta carpeta lee `AGENTS.md` solo,
 ├── 01_MATERIALS/        tus materiales: documentos, apuntes, PDF, imágenes
 ├── 02_WORK/             borradores y archivos en curso
 ├── 03_EXPORT/           lo terminado, listo para usar o enviar
+[[NO IMAGENES]]
 └── 04_STYLE_MANUAL/     manual de estilo, su PDF y el generador
+[[FIN]]
+[[SI IMAGENES]]
+└── 04_STYLE_MANUAL/     manual de estilo e imágenes, su PDF, el kit de imágenes y el generador
+[[FIN]]
 ```
 
 ## Cómo se trabaja
@@ -84,4 +89,7 @@ No necesita prompt de arranque: al abrirlo en esta carpeta lee `AGENTS.md` solo,
 - **La memoria del proyecto está en archivos, no en el chat.** `AGENT_AI/TRABAJO/PLAN.md` guarda las decisiones y las fases; `AGENT_AI/ESTADO.md` dice dónde se quedó el trabajo y qué sigue. Un chat nuevo los lee y continúa.
 - **Los originales no se tocan.** Lo que hay en `01_MATERIALS` se lee; se trabaja en `02_WORK` y lo terminado va a `03_EXPORT`.
 - **Los documentos siguen el manual.** Cuando toca producir el documento, Claude aplica `04_STYLE_MANUAL` con el color de la ficha.
+[[SI IMAGENES]]
+- **Las imágenes también.** Las láminas, ilustraciones e infografías siguen el estilo de imágenes del manual (bloques 11 a 16), con los prompts de `04_STYLE_MANUAL/02_PROMPTS`.
+[[FIN]]
 - **Un chat, una tarea.** Al terminar, la IA actualiza el estado y te dice qué ha cambiado y qué no ha podido comprobar.

@@ -7,6 +7,11 @@ Desde la carpeta del manual (04_STYLE_MANUAL en cada proyecto):
 Lee 01_MANUAL_DE_ESTILO.md y 03_SOURCE/00_MANUAL_CONFIG.json y escribe
 00_MANUAL_DE_ESTILO.pdf. Necesita Python 3 y reportlab
 (pip install reportlab). No descarga nada ni usa servicios externos.
+
+El mismo programa genera las dos versiones del manual: la general
+(bloques 01-10) y la de «general + imágenes» (bloques 01-16). Lo que
+cambia es el .md y la configuración de cada carpeta; las figuras de
+imágenes (@@img_...) solo se dibujan si el .md las pide.
 """
 from pathlib import Path
 import json, re, html, argparse, importlib.util, math
@@ -45,7 +50,8 @@ GOLD_DARK = C['accent_on_dark']
 IMG = HERE / '04_IMAGES'
 PHOTO = IMG / '00_STUDIO_PHOTO.png'
 COVER = ROOT / CFG['cover']['image_path']
-BLOCK_ICONS = ['layers', 'document', 'palette', 'heading', 'layout', 'table', 'card', 'image', 'flow', 'eye']
+BLOCK_ICONS = ['layers', 'document', 'palette', 'heading', 'layout', 'table', 'card', 'image', 'flow', 'eye',
+               'pen', 'pieces', 'compose', 'chart', 'spark', 'ai']  # 11-16: bloques de imágenes
 CALLOUT_ICON = {'nota': 'info', 'definicion': 'book', 'advertencia': 'warning', 'ejemplo': 'bulb', 'comprobar': 'check'}
 
 
@@ -224,6 +230,19 @@ class Book:
             rr(.08, .16, .84, .68, .1); poly([(.16, .74), (.4, .46), (.58, .64), (.68, .54), (.84, .74)], False); ci(.68, .34, .07)
         elif kind == 'link':
             rr(.08, .36, .46, .28, .14); rr(.46, .36, .46, .28, .14)
+        elif kind == 'pen':
+            poly([(.2, .8), (.3, .55), (.72, .13), (.87, .28), (.45, .7)]); l(.2, .8, .3, .55); l(.64, .21, .79, .36)
+        elif kind == 'pieces':
+            ci(.3, .3, .2); rr(.56, .1, .36, .36, .04); poly([(.3, .56), (.52, .92), (.08, .92)]); ci(.74, .74, .06, 1)
+        elif kind == 'compose':
+            rr(.14, .06, .72, .88, .05); l(.5, .14, .5, .86); ci(.5, .42, .16); l(.3, .76, .7, .76)
+        elif kind == 'chart':
+            ci(.5, .5, .4); l(.5, .1, .5, .5); l(.5, .5, .84, .7)
+        elif kind == 'spark':
+            poly([(.5, .06), (.58, .42), (.94, .5), (.58, .58), (.5, .94), (.42, .58), (.06, .5), (.42, .42)])
+        elif kind == 'ai':
+            rr(.18, .18, .64, .64, .1); rr(.36, .36, .28, .28, .04)
+            for a in (.32, .5, .68): l(a, .04, a, .18); l(a, .82, a, .96); l(.04, a, .18, a); l(.82, a, .96, a)
         elif kind == 'search':
             ci(.42, .42, .26); l(.62, .62, .88, .88)
         else:
@@ -455,6 +474,8 @@ def index_page(b):
     for i in range(0, len(BLOCKS), 2):
         pair = BLOCKS[i:i + 2]
         height = 46 + max(len(g['sections']) for g in pair) * pitch
+        if top + height > BOTTOM:  # con muchos bloques, el índice sigue en otra página
+            b.page_start(grid=True); b.txt(M, 80, 'Índice (continuación)', 20, 'B'); top = 118
         for column, g in enumerate(pair):
             x = M + column * (width + gap); bi = BLOCKS.index(g)
             b.rect(x, top, width, height, WHITE, BORDER, 11)
@@ -474,7 +495,6 @@ def index_page(b):
                     b.txt(x + width - 12, y + 5.5, f'{pg:02d}', 8.8, 'S', MUTED, 'right')
                     b.c.linkRect('', f"s{g['code']}_{s['num']}", (x + 6, H - y - pitch, x + width - 6, H - y), relative=0, thickness=0)
         top += height + gap
-    if top > BOTTOM: raise ValueError('El índice no cabe en una página.')
 
 
 def opening_cards(b, texts):
@@ -538,8 +558,8 @@ def render_lines(b, lines):
         if t.startswith('|'):
             raise ValueError('Tabla sin título «Tabla: {tab:clave} ...»: ' + t[:40])
         if t.startswith('@@closing_page'):
-            first, second = [x.strip() for x in t[len('@@closing_page'):].split('|')]
-            closing_page(b, first, second); i += 1; continue
+            parts = [x.strip() for x in t[len('@@closing_page'):].split('|')]
+            closing_page(b, *parts); i += 1; continue  # frase en dos líneas y, opcional, el dibujo
         if t.startswith('@@callout_grid'):
             m = re.match(r'@@callout_grid\s+\{fig:([\w-]+)\}\s*(.*)', t); i += 1; items = []
             while i < len(lines) and len(items) < 5 and (not lines[i].strip() or lines[i].strip().startswith('!!')):
@@ -1305,15 +1325,913 @@ def v_symbol_cards(b, kind, key, cap):
     figure(b, key, cap, sum(card_h(c) for c in cards) + 10, draw)
 
 
-def closing_page(b, first, second):
-    """Última página del documento: imagen simbólica centrada y frase de cierre en dos colores."""
+def closing_page(b, first, second, drawing='libro'):
+    """Última página del documento: imagen simbólica centrada y frase de cierre en dos colores.
+    drawing: 'libro' (por defecto) o 'escuadra' (escuadra, compás y G con el estilo de imágenes)."""
     flush_pending(b)
     b.page_start(grid=True)
     b.c.bookmarkPage('cierre'); b.c.addOutlineEntry('Cierre', 'cierre', 0)
-    s = 250; symbol(b, 'libro', M + (CW - s) / 2, 230, s)
+    if drawing == 'escuadra':
+        closing_square_compass(b, M + CW / 2, 178, .6)
+    else:
+        s = 250; symbol(b, 'libro', M + (CW - s) / 2, 230, s)
     b.txt(M + CW / 2, 520, first, 22, 'B', ACC, 'center')
     b.txt(M + CW / 2, 548, second, 22, 'B', INK, 'center')
     b.line(M + CW / 2 - 20, 594, M + CW / 2 + 20, 594, GOLD, 1.6)
+
+
+# ---------------------------------------------------------------- imágenes (bloques 11-16)
+# Colores fijos de la lámina modelo: las figuras de imágenes enseñan el estilo tal cual.
+LM = {k: HexColor(v) for k, v in dict(bg='#FBF8F3', ink='#252B36', lbl='#22343D', gt='#7B5A26', gd='#C7A15B', cream='#FBEFC9',
+                                         lila='#ECEAF4', white='#FFFFFF', goldl='#F3D27A', guide='#B4B0A8', thin='#596771',
+                                         grey='#6B6F78', eyew='#FFFDF6', pupil='#15181C').items()}
+SERIF = 'FS' if (HERE / '03_FONTS' / 'FreeSerifBold.ttf').exists() else 'B'
+if SERIF == 'FS':
+    pdfmetrics.registerFont(TTFont('FS', str(HERE / '03_FONTS' / 'FreeSerifBold.ttf')))
+
+
+def L_line(b, x1, t1, x2, t2, col, w, cap=0, dash=None):
+    c = b.c; c.saveState(); c.setStrokeColor(col); c.setLineWidth(w); c.setLineCap(cap)
+    if dash: c.setDash(*dash)
+    c.line(x1, H - t1, x2, H - t2); c.restoreState()
+
+
+def L_circle(b, x, t, r, stroke=None, w=1, fill=None, dash=None, cap=0):
+    c = b.c; c.saveState()
+    if fill is not None: c.setFillColor(fill)
+    if stroke is not None: c.setStrokeColor(stroke); c.setLineWidth(w); c.setLineCap(cap)
+    if dash: c.setDash(*dash)
+    c.circle(x, H - t, r, fill=1 if fill is not None else 0, stroke=1 if stroke is not None else 0); c.restoreState()
+
+
+def L_poly(b, pts, stroke=None, w=1, fill=None, join=0, closed=True, cap=0):
+    c = b.c; p = c.beginPath(); p.moveTo(pts[0][0], H - pts[0][1])
+    for x, t in pts[1:]: p.lineTo(x, H - t)
+    if closed: p.close()
+    c.saveState()
+    if fill is not None: c.setFillColor(fill)
+    if stroke is not None: c.setStrokeColor(stroke); c.setLineWidth(w); c.setLineJoin(join); c.setLineCap(cap)
+    c.drawPath(p, fill=1 if fill is not None else 0, stroke=1 if stroke is not None else 0); c.restoreState()
+
+
+def L_smooth(b, pts, stroke, w, fill=None):
+    """Curva suave por los puntos (cuadráticas por los puntos medios), remate redondo."""
+    c = b.c; p = c.beginPath(); P = [(x, H - t) for x, t in pts]
+    p.moveTo(*P[0]); cur = P[0]
+    for i in range(1, len(P) - 1):
+        q = P[i]; e = ((P[i][0] + P[i + 1][0]) / 2, (P[i][1] + P[i + 1][1]) / 2)
+        c1 = (cur[0] + 2 / 3 * (q[0] - cur[0]), cur[1] + 2 / 3 * (q[1] - cur[1]))
+        c2 = (e[0] + 2 / 3 * (q[0] - e[0]), e[1] + 2 / 3 * (q[1] - e[1]))
+        p.curveTo(*c1, *c2, *e); cur = e
+    p.lineTo(*P[-1])
+    c.saveState(); c.setStrokeColor(stroke); c.setLineWidth(w); c.setLineCap(1); c.setLineJoin(1)
+    if fill is not None: c.setFillColor(fill)
+    c.drawPath(p, stroke=1, fill=1 if fill is not None else 0); c.restoreState()
+
+
+def L_text(b, x, t, text, size, col, font='B', spacing=0, align='center', angle=0):
+    """Texto con espaciado entre letras; t es la línea base medida desde arriba."""
+    c = b.c; w = pdfmetrics.stringWidth(text, font, size) + spacing * (len(text) - 1)
+    dx = {'center': -w / 2, 'right': -w, 'left': 0}[align]
+    c.saveState(); c.translate(x, H - t); c.rotate(angle)
+    to = c.beginText(dx, 0); to.setFont(font, size); to.setCharSpace(spacing); to.setFillColor(col); to.textOut(text)
+    c.drawText(to); c.restoreState(); return w
+
+
+def L_hatch(b, pts, step, w, col, angle=45):
+    c = b.c; c.saveState(); p = c.beginPath(); p.moveTo(pts[0][0], H - pts[0][1])
+    for x, t in pts[1:]: p.lineTo(x, H - t)
+    p.close(); c.clipPath(p, stroke=0, fill=0)
+    xs = [q[0] for q in pts]; ts = [q[1] for q in pts]
+    cx, ct = (min(xs) + max(xs)) / 2, (min(ts) + max(ts)) / 2; span = (max(xs) - min(xs)) + (max(ts) - min(ts))
+    a = math.radians(angle); dx, dt = math.cos(a), -math.sin(a); nx, nt = -dt, dx
+    c.setStrokeColor(col); c.setLineWidth(w); k = -span
+    while k < span:
+        px, pt = cx + nx * k, ct + nt * k
+        c.line(px - dx * span, H - (pt - dt * span), px + dx * span, H - (pt + dt * span)); k += step
+    c.restoreState()
+
+
+def L_star(b, x, t, size, col=None):
+    a, k = size / 2, size / 2 * .12; c = b.c; p = c.beginPath(); y = H - t
+    p.moveTo(x, y + a); p.curveTo(x + k, y + k, x + k, y + k, x + a, y); p.curveTo(x + k, y - k, x + k, y - k, x, y - a)
+    p.curveTo(x - k, y - k, x - k, y - k, x - a, y); p.curveTo(x - k, y + k, x - k, y + k, x, y + a); p.close()
+    c.saveState(); c.setFillColor(col or LM['ink']); c.drawPath(p, fill=1, stroke=0); c.restoreState()
+
+
+def L_diamond(b, x, t, wd, ht, fill=None, stroke=None, w=1):
+    L_poly(b, [(x, t - ht / 2), (x + wd / 2, t), (x, t + ht / 2), (x - wd / 2, t)], stroke, w, fill)
+
+
+def cota(b, x1, t1, x2, t2, text, off=0, side=1):
+    """Cota: línea fina con dos topes y la medida en el centro."""
+    col = ACC; L_line(b, x1, t1, x2, t2, col, .5)
+    a = math.atan2(t2 - t1, x2 - x1); nx, nt = -math.sin(a) * 3, math.cos(a) * 3
+    for x, t in ((x1, t1), (x2, t2)): L_line(b, x - nx, t - nt, x + nx, t + nt, col, .5)
+    mx, mt = (x1 + x2) / 2, (t1 + t2) / 2
+    if abs(t2 - t1) < 1:
+        b.txt(mx, mt - 9 if side > 0 else mt + 3, text, 6.6, 'S', ACC, 'center')
+    else:
+        b.txt(mx + 4 * side if side > 0 else mx - 4, mt - 3, text, 6.6, 'S', ACC, 'left' if side > 0 else 'right')
+
+
+def note(b, x, t, text, align='center', color=None, size=7.2):
+    b.txt(x, t, text, size, 'M', color or MUTED, align)
+
+
+def spiral_pts(cx, ct, r0, r1, turns, a0, cw=1):
+    n = int(30 * turns) + 2
+    return [(cx + r0 * (r1 / r0) ** (i / (n - 1)) * math.cos(a0 + cw * i / (n - 1) * turns * 2 * math.pi),
+             ct + r0 * (r1 / r0) ** (i / (n - 1)) * math.sin(a0 + cw * i / (n - 1) * turns * 2 * math.pi)) for i in range(n)]
+
+
+def L_leaf(b, pts, width, lobes, s, shade=True):
+    Ls = [math.dist(pts[i], pts[i - 1]) for i in range(1, len(pts))]; tot = sum(Ls); left, right, acc = [], [], 0
+    for i, p in enumerate(pts):
+        if i: acc += Ls[i - 1]
+        u = acc / tot; a = pts[min(i + 1, len(pts) - 1)]; z = pts[max(i - 1, 0)]
+        dx, dt = a[0] - z[0], a[1] - z[1]; d = math.hypot(dx, dt) or 1; nx, nt = -dt / d, dx / d
+        pr = max(0.0, math.sin(math.pi * u)) ** .8 * width; lob = 1 + .3 * abs(math.sin(u * lobes * math.pi))
+        left.append((p[0] + nx * pr * lob, p[1] + nt * pr * lob)); right.append((p[0] - nx * pr * .7, p[1] - nt * pr * .7))
+    L_poly(b, left + right[::-1], None, 0, LM['white'])
+    if shade: L_hatch(b, right[::-1] + pts, 6 * s, .75 * s, LM['thin'])
+    L_smooth(b, left, LM['ink'], 1.5 * s); L_smooth(b, right, LM['ink'], 1.5 * s); L_smooth(b, pts, LM['thin'], .75 * s)
+
+
+def L_corner(b, x0, t0, sx, st, s):
+    """Voluta de esquina (190 de lado en unidades de la lámina) a escala s."""
+    T = lambda pts: [(x0 + sx * x * s, t0 + st * t * s) for x, t in pts]
+    for off, w in ((0, 1.5), (7, .75)):
+        L_smooth(b, T([(10 + off, 175), (10 + off, 120), (25, 80 + off * .3), (62, 50 + off), (112, 40 + off), (160, 44 + off * .5)]), LM['ink'], w * s)
+        L_smooth(b, T([(175, 10 + off), (120, 10 + off), (80 + off * .3, 25), (50 + off, 62), (40 + off, 112), (44 + off * .5, 160)]), LM['ink'], w * s)
+    L_smooth(b, T(spiral_pts(172, 58, 16, 3, 1.4, math.pi, 1)), LM['ink'], 1.5 * s)
+    L_smooth(b, T(spiral_pts(58, 172, 16, 3, 1.4, math.pi * .5, -1)), LM['ink'], 1.5 * s)
+    L_smooth(b, T(spiral_pts(48, 48, 30, 4.5, 1.8, math.pi * .25, 1)), LM['ink'], 1.5 * s)
+    L_leaf(b, T([(66, 66), (92, 82), (118, 106), (132, 134), (130, 160)]), 15 * s, 6, s)
+    L_leaf(b, T([(66, 66), (82, 92), (106, 118), (134, 132), (160, 130)]), 12 * s, 5, s)
+    L_leaf(b, T([(92, 24), (118, 12), (146, 10), (168, 18)]), 7 * s, 4, s, False)
+    L_leaf(b, T([(24, 92), (12, 118), (10, 146), (18, 168)]), 7 * s, 4, s, False)
+
+
+def L_shell(b, cx, t, s, flip=1):
+    T = lambda pts: [(cx + x * s, t + flip * y * s) for x, y in pts]
+    for sx in (1, -1):
+        L_smooth(b, T([(sx * x, y) for x, y in spiral_pts(30, 8, 13, 2.5, 1.2, math.pi * 1.2, 1)]), LM['ink'], 1.5 * s)
+        L_leaf(b, T([(sx * 8, -4), (sx * 26, -18), (sx * 48, -20), (sx * 66, -9)]), 7 * s, 3, s, False)
+        L_smooth(b, T([(sx * 12, 12), (sx * 34, 21), (sx * 62, 16), (sx * 80, 5)]), LM['ink'], 1.05 * s)
+    for j in range(-3, 4):
+        a = math.radians(-90 + j * 16)
+        L_smooth(b, T([(0, 9), (math.cos(a) * 16, 9 + math.sin(a) * 16), (math.cos(a) * 30, 9 + math.sin(a) * 30)]), LM['ink'], 1.05 * s)
+    L_smooth(b, T([(-28, 2), (-16, -19), (0, -26), (16, -19), (28, 2)]), LM['ink'], 1.5 * s)
+
+
+def L_main_circle(b, x, t, s, fill=None, big=False):
+    if big:
+        L_circle(b, x, t, 106.5 * s, LM['ink'], 4.5 * s, fill or LM['bg']); L_circle(b, x, t, (106.5 - 9.75) * s, LM['gd'], 1.35 * s)
+    else:
+        L_circle(b, x, t, 93 * s, LM['ink'], 3.75 * s, fill or LM['cream']); L_circle(b, x, t, (93 - 8.25) * s, LM['gd'], 1.2 * s)
+
+
+def L_label(b, x, t, s, name, sub=None, size=21):
+    L_text(b, x, t, name, size * s, LM['lbl'], 'B', size * .12 * s)
+    if sub: L_text(b, x, t + size * s * 22 / 21, f'({sub})', size * 2 / 3 * s, LM['gt'], 'S', size * 2 / 3 * .104 * s)
+
+
+def L_eye(b, x, t, r, s, step=5):
+    """Ojo de línea; step indica hasta qué paso del método se dibuja (1-5)."""
+    w, hh = r, r * .52; c = b.c
+    p = c.beginPath(); p.moveTo(x - w, H - t)
+    p.curveTo(x - w / 3, H - (t - hh * 1.07), x + w / 3, H - (t - hh * 1.07), x + w, H - t)
+    p.curveTo(x + w / 3, H - (t + hh * 1.07), x - w / 3, H - (t + hh * 1.07), x - w, H - t); p.close()
+    lw = 1.5 * s if step >= 3 else .6
+    c.saveState(); c.setStrokeColor(LM['ink']); c.setLineWidth(lw); c.setLineJoin(1)
+    if step >= 4: c.setFillColor(LM['eyew'])
+    c.drawPath(p, stroke=1, fill=1 if step >= 4 else 0); c.restoreState()
+    if step >= 4:
+        L_circle(b, x, t, r * .36, None, 0, LM['ink']); L_circle(b, x, t, r * .36, LM['gd'], 1.2 * s)
+        L_circle(b, x, t, r * .15, None, 0, LM['pupil']); L_circle(b, x + r * .12, t - r * .12, r * .07, None, 0, LM['eyew'])
+    else:
+        L_circle(b, x, t, r * .36, LM['ink'], lw); L_circle(b, x, t, r * .15, LM['ink'], lw)
+    L_smooth(b, [(x - w * .95, t - hh * .95), (x, t - hh * 2.3), (x + w * .95, t - hh * .95)], LM['ink'], lw)
+    if step >= 5:
+        for j in range(-3, 4):
+            a = math.radians(-90 + j * 17)
+            L_line(b, x + math.cos(a) * r * .62, t + math.sin(a) * r * .55, x + math.cos(a) * r * .84, t + math.sin(a) * r * .78, LM['ink'], 1.05 * s, 1)
+        L_hatch(b, [(x + w * .1, t + hh * .55), (x + w * .9, t + hh * .1), (x + w * .95, t + hh * .35), (x + w * .2, t + hh * .95)], 4 * s, .75 * s, LM['thin'])
+
+
+def L_symbol(b, kind, x, t, r, s):
+    ink, w = LM['ink'], 1.5 * s
+    if kind == 'sol':
+        L_circle(b, x, t, r * .45, ink, w, LM['white']); L_circle(b, x, t, r * .12, None, 0, LM['gd'])
+        for k in range(12):
+            a = math.radians(k * 30); r2 = r if k % 2 == 0 else r * .82
+            L_line(b, x + math.cos(a) * r * .6, t + math.sin(a) * r * .6, x + math.cos(a) * r2, t + math.sin(a) * r2, ink, w, 1)
+    elif kind == 'estrella':
+        pts = [(x + math.cos(math.radians(-90 + k * 36)) * (r if k % 2 == 0 else r * .42), t + math.sin(math.radians(-90 + k * 36)) * (r if k % 2 == 0 else r * .42)) for k in range(10)]
+        L_poly(b, pts, ink, w, LM['white'], 1); L_circle(b, x, t, r * .1, None, 0, LM['gd'])
+    elif kind == 'luna':
+        c = b.c; c.saveState(); p = c.beginPath(); p.circle(x, H - t, r * .8); c.clipPath(p, stroke=0, fill=0)
+        c.restoreState()
+        L_circle(b, x, t, r * .8, ink, w, LM['white']); L_circle(b, x + r * .38, t - r * .15, r * .68, None, 0, LM['lila'])
+        L_star(b, x + r * .55, t - r * .35, r * .35)
+    elif kind == 'llave':
+        L_circle(b, x, t - r * .45, r * .38, ink, w, LM['white']); L_circle(b, x, t - r * .45, r * .14, ink, 1.05 * s, LM['bg'])
+        L_poly(b, [(x - r * .07, t - r * .07), (x + r * .07, t - r * .07), (x + r * .07, t + r), (x - r * .07, t + r)], ink, w, LM['white'])
+        for yy in (.6, .85):
+            L_poly(b, [(x + r * .07, t + r * yy - r * .07), (x + r * .32, t + r * yy - r * .07), (x + r * .32, t + r * yy + r * .07), (x + r * .07, t + r * yy + r * .07)], ink, 1.05 * s, LM['white'])
+
+
+def L_ooo(b, cx, t, s, length=82.5, gap=None):
+    if gap:
+        for sx in (1, -1):
+            x1 = cx + sx * gap * s; x2 = x1 + sx * length * s
+            L_line(b, x1, t, x2, t, LM['gd'], 1.5 * s)
+            for j in range(3): L_circle(b, x2 + sx * (13 + 3.4 + j * 15) * s, t, 3.4 * s, LM['ink'], 1.35 * s, LM['bg'])
+    else:
+        L_line(b, cx - length / 2 * s, t, cx + length / 2 * s, t, LM['gd'], 1.5 * s)
+        for sx in (1, -1):
+            for j in range(3): L_circle(b, cx + sx * (length / 2 + 13 + 3.4 + j * 15) * s, t, 3.4 * s, LM['ink'], 1.35 * s, LM['bg'])
+
+
+def L_phrase(b, cx, t, words, s, size=16, sp=5.2):
+    sz, spc, gap = size * s, sp * s, 34 * s
+    wid = [pdfmetrics.stringWidth(w_, 'B', sz) + spc * (len(w_) - 1) for w_ in words]
+    x = cx - (sum(wid) + gap * (len(words) - 1)) / 2
+    for i, w_ in enumerate(words):
+        L_text(b, x, t, w_, sz, LM['gt'] if i == len(words) - 1 else LM['lbl'], 'B', spc, 'left'); x += wid[i]
+        if i < len(words) - 1: L_diamond(b, x + gap / 2, t - sz * .36, 5.4 * s, 7.6 * s, LM['gd']); x += gap
+
+
+def panel(b, x, t, w, h, fill=None):
+    b.rect(x, t, w, h, fill or LM['bg'], BORDER, 8)
+
+
+def yes_no(b, x, t, ok):
+    """Marca de sí o no sobre un ejemplo."""
+    col = HexColor('#3C7A4E') if ok else HexColor('#A23B2E')
+    b.circle(x, t, 7, col)
+    c = b.c; c.saveState(); c.setStrokeColor(WHITE); c.setLineWidth(1.3); c.setLineCap(1)
+    if ok:
+        c.line(x - 3, H - t, x - .8, H - (t + 2.6)); c.line(x - .8, H - (t + 2.6), x + 3.2, H - (t - 2.6))
+    else:
+        c.line(x - 2.6, H - (t - 2.6), x + 2.6, H - (t + 2.6)); c.line(x - 2.6, H - (t + 2.6), x + 2.6, H - (t - 2.6))
+    c.restoreState()
+
+
+def img_file(name):
+    return IMG / name
+
+
+def draw_image(b, path, x, t, w, h):
+    iw, ih = ImageReader(str(path)).getSize(); sc = min(w / iw, h / ih); dw, dh = iw * sc, ih * sc
+    b.c.drawImage(str(path), x + (w - dw) / 2, H - t - (h - dh) / 2 - dh, dw, dh, mask='auto')
+    b.rect(x + (w - dw) / 2, t + (h - dh) / 2, dw, dh, None, BORDER, 3, width=.5)
+    return dw, dh
+
+
+# -------- bloque 11
+def v_img_models(b, kind, key, cap):
+    def draw(t):
+        h = 330; w = (CW - 20) / 2
+        draw_image(b, img_file('02_STYLE_MODEL.png'), M, t, w, h)
+        draw_image(b, img_file('03_STYLE_EXAMPLE.png'), M + w + 20, t, w, h)
+        b.txt(M + w / 2, t + h + 6, 'LÁMINA MODELO', 7.4, 'S', ACC, 'center')
+        b.txt(M + w + 20 + w / 2, t + h + 6, 'COMPOSICIÓN CON LAS PIEZAS', 7.4, 'S', ACC, 'center')
+    figure(b, key, cap, 350, draw)
+
+
+def v_img_palette(b, kind, key, cap):
+    rows = [('FONDO Y RELLENOS', [('Fondo', '#FBF8F3'), ('Crema principal', '#FBEFC9'), ('Lila secundario', '#ECEAF4'), ('Blanco', '#FFFFFF')]),
+            ('TINTAS Y LÍNEAS', [('Tinta de líneas', '#252B36'), ('Rótulos', '#22343D'), ('Líneas finas', '#596771'), ('Gris de apoyo', '#6B6F78'), ('Líneas guía', '#B4B0A8')]),
+            ('DORADOS', [('Dorado de texto', '#7B5A26'), ('Dorado de detalles', '#C7A15B'), ('Dorado claro', '#F3D27A')])]
+    def draw(t):
+        y = t
+        for lab, cols in rows:
+            b.txt(M, y + 16, lab, 7, 'S', ACC)
+            sw = (CW - 96 - 4 * 8) / 5
+            for i, (n, hx) in enumerate(cols):
+                x = M + 96 + i * (sw + 8)
+                b.rect(x, y, sw, 30, HexColor(hx), BORDER, 5)
+                b.txt(x, y + 35, n, 7.4, 'S'); b.txt(x, y + 45, hx, 6.8, 'M', MUTED)
+            y += 62
+    figure(b, key, cap, 182, draw)
+
+
+def v_img_type(b, kind, key, cap):
+    s = .62
+    lines = [('TÍTULO', 'B', 37.5, 9.75, LM['lbl'], 'Título principal · Inter Bold 37,5 · espaciado 26 %'),
+             ('NOMBRE', 'B', 37.5, 13.5, LM['gt'], 'Nombre propio · Inter Bold 37,5 · 36 %'),
+             ('RÓTULO DE CÍRCULO', 'B', 21, 2.52, LM['lbl'], 'Rótulo · Inter Bold 21 · 12 %'),
+             ('(SUBTÍTULO)', 'S', 14, 1.46, LM['gt'], 'Subtítulo · Inter SemiBold 14 · 10 %'),
+             ('FRASE DE SOBRE UNA LÍNEA', 'M', 11, 2.2, LM['grey'], 'Frase sobre una línea · Inter Medium 11 · 20 %')]
+    def draw(t):
+        y = t + 22
+        for txt, f, sz, sp, col, lab in lines:
+            L_text(b, M + 150, y, txt, sz * s * 1.25, col, f, sp * s * 1.25)
+            b.txt(M + 300, y - 7, lab, 8, 'M', MUTED); y += max(sz * s * 1.25, 12) + 14
+        c = b.c; c.saveState(); c.setFillColor(LM['cream']); c.setStrokeColor(LM['ink']); c.setLineWidth(1.2)
+        to = c.beginText(M + 108, H - (y + 74)); to.setFont(SERIF, 86); to.setTextRenderMode(2); to.textOut('A'); c.drawText(to); c.restoreState()
+        L_text(b, M + 200, y + 70, 'g', 56, LM['ink'], SERIF, 0)
+        b.txt(M + 300, y + 30, 'Capital · FreeSerif Bold 84–150 · sin espaciado', 8, 'M', MUTED)
+        b.txt(M + 300, y + 44, 'Grande: relleno crema y contorno de tinta', 8, 'M', MUTED)
+    figure(b, key, cap, 292, draw)
+
+
+def v_img_strokes(b, kind, key, cap):
+    data = [(4.5, 'ink', 'Muy gruesa · 4,5'), (3.75, 'ink', 'Gruesa · 3,75'), (2.625, 'ink', 'Marco · 2,625'), (1.5, 'ink', 'Media · 1,5'),
+            (1.2, 'gd', 'Fina · 1,2 (dorado o guía)'), (1.05, 'ink', 'Detalle · 1,05'), (.75, 'thin', 'Plumilla · 0,75')]
+    def draw(t):
+        k = .8
+        for i, (w, col, lab) in enumerate(data):
+            y = t + 8 + i * 17
+            L_line(b, M, y, M + 250, y, LM[col], w * k)
+            b.txt(M + 266, y - 3.5, lab, 8, 'M', INK)
+        y = t + 140; x = M
+        b.txt(x, y, 'REMATES Y UNIONES', 7, 'S', ACC)
+        L_line(b, x + 10, y + 30, x + 80, y + 30, LM['ink'], 6, 0); note(b, x + 45, y + 42, 'recta: corte recto')
+        L_line(b, x + 130, y + 30, x + 200, y + 30, LM['ink'], 6, 1); note(b, x + 165, y + 42, 'curva y símbolo: redondo')
+        L_poly(b, [(x + 250, y + 40), (x + 280, y + 14), (x + 310, y + 40)], LM['ink'], 6, None, 0, False); note(b, x + 280, y + 52, 'geométrico: en ángulo')
+        L_poly(b, [(x + 360, y + 40), (x + 390, y + 14), (x + 420, y + 40)], LM['ink'], 6, None, 1, False, 1); note(b, x + 390, y + 52, 'adorno: redondeada')
+    figure(b, key, cap, 205, draw)
+
+
+def v_img_gaps(b, kind, key, cap):
+    s = .62
+    def draw(t):
+        w = (CW - 24) / 3
+        # 1: línea y texto (16)
+        x = M; panel(b, x, t, w, 110); cx = x + w / 2
+        L_text(b, cx, t + 62, 'TÍTULO', 37.5 * s, LM['lbl'], 'B', 9.75 * s)
+        L_line(b, cx, t + 8, cx, t + 62 - 37.5 * s * .73 - 16 * s, LM['guide'], 1.2)
+        L_line(b, cx, t + 62 + 16 * s, cx, t + 102, LM['guide'], 1.2)
+        cota(b, cx + 8, t + 62 + 1, cx + 8, t + 62 + 16 * s, '16')
+        note(b, cx, t + 124, 'Línea y texto: 16')
+        # 2: círculo y curva (13)
+        x = M + w + 12; panel(b, x, t, w, 110); cx = x + w / 2
+        L_circle(b, cx, t + 55, 34, LM['ink'], 3.75 * s, LM['cream'])
+        L_circle(b, cx, t + 55, 34 + 13 * s * 1.6 + 2, LM['guide'], 1.2)
+        cota(b, cx + 34, t + 55, cx + 34 + 13 * s * 1.6, t + 55, '13')
+        note(b, cx, t + 124, 'Círculo y círculo: 13')
+        # 3: sí / no
+        x = M + 2 * (w + 12); panel(b, x, t, w, 110)
+        for j, ok in enumerate((True, False)):
+            cx = x + w / 4 + j * w / 2
+            L_text(b, cx, t + 60, 'ABC', 21 * s * 1.2, LM['lbl'], 'B', 2.52 * s)
+            if ok:
+                L_line(b, x + 6 + j * w / 2, t + 54, cx - 26, t + 54, LM['guide'], 1.2); L_line(b, cx + 26, t + 54, x + w / 2 - 6 + j * w / 2, t + 54, LM['guide'], 1.2)
+            else:
+                L_line(b, x + 6 + j * w / 2, t + 54, x + w / 2 - 6 + j * w / 2, t + 54, LM['guide'], 1.2)
+            yes_no(b, cx, t + 20, ok)
+        note(b, x + w / 2, t + 124, 'La línea se corta antes del texto')
+    figure(b, key, cap, 130, draw)
+
+
+def v_img_hatch(b, kind, key, cap):
+    def draw(t):
+        w = (CW - 24) / 3
+        x = M; panel(b, x, t, w, 130); cx = x + w / 2
+        pts = [(cx - 40, t + 40), (cx + 40, t + 40), (cx + 40, t + 110), (cx - 40, t + 110)]
+        L_poly(b, pts, LM['ink'], 1.5, LM['white'])
+        L_hatch(b, [(cx + 10, t + 40), (cx + 40, t + 40), (cx + 40, t + 110), (cx + 10, t + 110)], 4, .5, LM['thin'])
+        L_hatch(b, [(cx - 40, t + 96), (cx + 10, t + 96), (cx + 10, t + 110), (cx - 40, t + 110)], 4, .5, LM['thin'])
+        b.arrow(x + 16, t + 12, cx - 46, t + 34, ACC, .9, 4); note(b, x + 12, t + 8, 'luz', 'left', ACC)
+        x = M + w + 12; panel(b, x, t, w, 130); cx = x + w / 2
+        L_poly(b, [(cx - 50, t + 30), (cx + 50, t + 30), (cx + 50, t + 100), (cx - 50, t + 100)], None, 0, LM['white'])
+        L_hatch(b, [(cx - 50, t + 30), (cx + 50, t + 30), (cx + 50, t + 100), (cx - 50, t + 100)], 6, .75, LM['thin'])
+        L_poly(b, [(cx - 50, t + 30), (cx + 50, t + 30), (cx + 50, t + 100), (cx - 50, t + 100)], LM['ink'], 1.5)
+        cota(b, cx + 56, t + 30, cx + 56, t + 30 + 6 / math.sin(math.radians(45)), '6')
+        note(b, cx, t + 118, '0,75 · cada 6 · a 45°')
+        x = M + 2 * (w + 12); panel(b, x, t, w, 130)
+        for j, mode in enumerate(('izq', 'cruza')):
+            cx = x + w / 4 + j * w / 2
+            pts = [(cx - 26, t + 44), (cx + 26, t + 44), (cx + 26, t + 100), (cx - 26, t + 100)]
+            L_poly(b, pts, LM['ink'], 1.5, LM['white'])
+            if mode == 'izq':
+                L_hatch(b, [(cx - 26, t + 44), (cx, t + 44), (cx, t + 100), (cx - 26, t + 100)], 4, .5, LM['thin'])
+            else:
+                L_hatch(b, [(cx - 34, t + 36), (cx + 34, t + 36), (cx + 34, t + 108), (cx - 34, t + 108)], 4, .5, LM['thin'])
+                L_poly(b, pts, LM['ink'], 1.5)
+            yes_no(b, cx, t + 22, False)
+        note(b, x + w / 4, t + 118, 'sombra a la izquierda'); note(b, x + 3 * w / 4, t + 118, 'cruza el contorno')
+    figure(b, key, cap, 132, draw)
+
+
+# -------- bloque 12
+def v_img_frame(b, kind, key, cap):
+    s = .95
+    def draw(t):
+        x0, t0 = M, t
+        box = 250
+        b.rect(x0, t0, box, box, LM['bg'], BORDER, 6)
+        c = b.c; c.saveState(); p = c.beginPath(); p.roundRect(x0, H - t0 - box, box, box, 6); c.clipPath(p, stroke=0, fill=0)
+        for d, w in ((27, 2.625), (42, 1.125), (63, 1.125)):
+            L_line(b, x0 + d * s, t0 + d * s, x0 + box + 20, t0 + d * s, LM['ink'], w * s); L_line(b, x0 + d * s, t0 + d * s, x0 + d * s, t0 + box + 20, LM['ink'], w * s)
+        L_line(b, x0 + 72 * s, t0 + 72 * s, x0 + box + 20, t0 + 72 * s, LM['gd'], 1.05 * s); L_line(b, x0 + 72 * s, t0 + 72 * s, x0 + 72 * s, t0 + box + 20, LM['gd'], 1.05 * s)
+        L_corner(b, x0 + 63 * s, t0 + 63 * s, 1, 1, s)
+        c.restoreState()
+        for i, (d, lab) in enumerate(((27, '27 · 2,625'), (42, '42 · 1,125'), (63, '63 · 1,125'), (72, '72 · dorado 1,05'))):
+            yy = t0 + box + 14 + i * 12
+            L_line(b, x0 + d * s, t0 + box - 4, x0 + d * s, yy - 3, ACC, .4, dash=(1.5, 1.5))
+            b.txt(x0 + d * s + 4, yy - 6, lab, 6.6, 'S', ACC)
+        x1 = M + box + 30
+        b.txt(x1, t0 + 4, 'VOLUTA DE ESQUINA', 7, 'S', ACC)
+        note(b, x1, t0 + 18, 'Cuadrado de 190 desde la línea interior.', 'left', INK, 8)
+        note(b, x1, t0 + 30, 'Espiral de 2 vueltas en 1,5; hojas festoneadas;', 'left', INK, 8)
+        note(b, x1, t0 + 42, 'plumilla en la cara de abajo de cada hoja.', 'left', INK, 8)
+        note(b, x1, t0 + 54, 'Las otras tres esquinas, por simetría.', 'left', INK, 8)
+        b.txt(x1, t0 + 92, 'ADORNO CENTRAL', 7, 'S', ACC)
+        panel(b, x1, t0 + 106, CW - box - 30, 80)
+        L_shell(b, x1 + (CW - box - 30) / 2, t0 + 150, 1.15)
+        note(b, x1, t0 + 204, 'Concha de 7 radios y dos volutas; abajo, en espejo.', 'left', INK, 8)
+    figure(b, key, cap, 310, draw)
+
+
+def v_img_circles(b, kind, key, cap):
+    s = .5
+    def draw(t):
+        w = CW / 4
+        cx = M + w / 2; ct = t + 78
+        L_main_circle(b, cx, ct, s, LM['bg'], big=True)
+        cota(b, cx, ct, cx + 106.5 * s, ct, 'r 106,5'); note(b, cx, t + 160, 'Grande · 4,5 · aro 1,35 a 9,75')
+        cx = M + w * 1.5
+        L_main_circle(b, cx, ct, s, LM['cream'])
+        cota(b, cx, ct, cx + 93 * s, ct, 'r 93')
+        cota(b, cx - 93 * s, ct + 56, cx - (93 - 8.25) * s, ct + 56, '8,25', side=-1)
+        note(b, cx, t + 160, 'Principal · 3,75 · aro 1,2 a 8,25')
+        cx = M + w * 2.5
+        L_circle(b, cx, ct, 64.5 * s, LM['goldl'], 2.25 * s, None, (1.5 * s, 9 * s), 1)
+        L_text(b, cx, ct + 22, 'A', 84 * s, LM['ink'], SERIF)
+        cota(b, cx, ct - 42, cx + 64.5 * s, ct - 42, 'r 64,5')
+        note(b, cx, t + 160, 'Con letra · punteado 1,5 / 9')
+        cx = M + w * 3.5
+        L_circle(b, cx, ct, 10.5 * s * 2.5, LM['grey'], 1.5 * s * 2, LM['bg'])
+        note(b, cx, ct + 40, '(ampliado ×2,5)')
+        note(b, cx, t + 160, 'Pequeño · r 10,5 · 1,5 gris')
+    figure(b, key, cap, 170, draw)
+
+
+def v_img_labels(b, kind, key, cap):
+    s = .62
+    def draw(t):
+        cx = M + CW / 2
+        tw = L_text(b, cx, t + 26, 'TÍTULO DE LA IMAGEN', 37.5 * s, LM['lbl'], 'B', 9.75 * s)
+        L_line(b, cx - tw * .3, t + 26 + 22 * s, cx + tw * .3, t + 26 + 22 * s, LM['gd'], 1.5 * s)
+        cota(b, cx + tw / 2 + 10, t + 26, cx + tw / 2 + 10, t + 26 + 22 * s, '22')
+        note(b, cx, t + 56, 'Título · raya dorada al 60 % del ancho, 22 por debajo')
+        x = M + 90
+        L_label(b, x, t + 100, s * 1.2, 'RÓTULO', 'SUBTÍTULO')
+        cota(b, x + 52, t + 100, x + 52, t + 100 + 21 * s * 1.2 * 22 / 21, '= tamaño del rótulo')
+        note(b, x + 20, t + 132, 'Rótulo y subtítulo entre paréntesis')
+        bx = M + 300; bt = t + 76
+        for k in range(7): L_line(b, bx + k * 30, bt, bx + k * 30, bt + 60, LM['guide'], .8)
+        for k in range(3): L_line(b, bx, bt + k * 30, bx + 180, bt + k * 30, LM['guide'], .8)
+        b.rect(bx + 30, bt + 14, 120, 32, LM['bg'], None, 0)
+        L_text(b, bx + 90, bt + 35, 'CARTELA', 21 * s, LM['lbl'], 'B', 2.52 * s)
+        note(b, bx + 90, t + 148, 'Cartela: caja del color del fondo, sin borde', 'center')
+        L_ooo(b, cx, t + 184, s, 82.5, 165)
+        L_phrase(b, cx, t + 188, ['IDEA', 'FORMA', 'EN ORDEN'], s)
+        note(b, cx, t + 204, 'Frase de pie: rombitos dorados, última idea en dorado y adornos «ooo ——»')
+        x1, y1, x2, y2 = M + 60, t + 286, M + CW - 60, t + 236
+        ang = math.degrees(math.atan2(y1 - y2, x2 - x1))
+        L_line(b, x1, y1, x1 + (x2 - x1) * .3, y1 - (y1 - y2) * .3, LM['guide'], 1.2)
+        L_line(b, x1 + (x2 - x1) * .7, y1 - (y1 - y2) * .7, x2, y2, LM['guide'], 1.2)
+        L_text(b, (x1 + x2) / 2, (y1 + y2) / 2 + 3, 'FRASE · SOBRE · UNA · LÍNEA', 11 * s * 1.4, LM['grey'], 'M', 2.2 * s * 1.4, 'center', ang)
+        note(b, cx, t + 296, 'Frase sobre una línea: la línea se corta detrás, con el mismo aire a los dos lados')
+    figure(b, key, cap, 306, draw)
+
+
+def v_img_ornaments(b, kind, key, cap):
+    s = 1.3
+    def draw(t):
+        cx = M + 130
+        L_ooo(b, cx, t + 24, s)
+        x0 = cx + (82.5 / 2 + 13 + 3.4) * s
+        cota(b, x0, t + 10, x0 + 15 * s, t + 10, '15')
+        cota(b, cx - 82.5 / 2 * s, t + 40, cx + 82.5 / 2 * s, t + 40, '82,5', side=-1)
+        note(b, cx, t + 62, '«ooo ——» · r 3,4 · raya dorada 1,5')
+        x = M + 300; L_diamond(b, x, t + 24, 5.4 * 2.5, 7.6 * 2.5, LM['gd']); note(b, x, t + 62, 'rombito 5,4 × 7,6 (×2,5)')
+        x = M + 420; L_diamond(b, x, t + 24, 26, 26, LM['goldl'], LM['ink'], 1.35); note(b, x, t + 62, 'rombo 18 × 18')
+        y = t + 96
+        L_line(b, M, y, M + 200, y, LM['ink'], 2.25); L_line(b, M, y + 7.5, M + 200, y + 7.5, LM['ink'], 1.05)
+        cota(b, M + 210, y, M + 210, y + 7.5, '7,5'); note(b, M + 100, y + 26, 'separador doble · 2,25 y 1,05')
+        x = M + 300; L_star(b, x, y + 4, 30); L_star(b, x + 30, y + 12, 18); L_star(b, x + 14, y - 12, 12)
+        note(b, x + 12, y + 32, 'estrellitas · cintura 12 %')
+        pts = [(M + 400, y - 6), (M + 440, y + 12), (M + 480, y - 2), (M + 515, y + 16)]
+        for i in range(1, len(pts)):
+            (x1, t1), (x2, t2) = pts[i - 1], pts[i]; d = math.dist(pts[i - 1], pts[i]); ux, ut = (x2 - x1) / d, (t2 - t1) / d
+            L_line(b, x1 + ux * 6.5, t1 + ut * 6.5, x2 - ux * 6.5, t2 - ut * 6.5, LM['grey'], 1.05 * .66)
+        for px, pt in pts: L_circle(b, px, pt, 6.5, LM['grey'], 1, LM['bg'])
+        note(b, M + 458, y + 32, 'constelación · r 9,75')
+    figure(b, key, cap, 140, draw)
+
+
+def v_img_construction(b, kind, key, cap):
+    def draw(t):
+        w, h = 190, 268; x = M + 40
+        b.rect(x, t, w, h, LM['bg'], BORDER, 3); cx = x + w / 2
+        L_line(b, cx, t + 10, cx, t + 40, LM['guide'], 1); L_line(b, cx, t + 56, cx, t + h - 10, LM['guide'], 1)
+        L_text(b, cx, t + 52, 'TÍTULO', 10, LM['lbl'], 'B', 2.6)
+        for f in (.42, .74): L_line(b, x + 8, t + h * f, x + w - 8, t + h * f, LM['guide'], 1)
+        L_circle(b, cx, t + 120, 62, LM['guide'], 1)
+        for sx in (-1, 1): L_line(b, cx, t + 66, cx + sx * 80, t + 230, LM['guide'], 1)
+        for k in range(5): L_line(b, x + w - 60 + k * 11, t + 62, x + w - 60 + k * 11, t + 100, LM['guide'], 1)
+        for k in range(4): L_line(b, x + w - 60, t + 62 + k * 12.6, x + w - 16, t + 62 + k * 12.6, LM['guide'], 1)
+        for px, pt in ((x + 26, t + 70), (x + 40, t + 86), (x + 30, t + 100)): L_circle(b, px, pt, 3, LM['grey'], .7, LM['bg'])
+        L_main_circle(b, cx, t + 76, .17); L_main_circle(b, cx - 62 * .87, t + 151, .17, LM['lila']); L_main_circle(b, cx + 62 * .87, t + 151, .17, LM['white'])
+        notes = [(t + 30, 'Eje vertical, cortado en cada texto'), (t + 82, 'Rejilla en una zona de fondo, con pareja'),
+                 (t + 120, 'Círculo guía por los centros del grupo'), (t + 180, 'Diagonales que unen puntos clave'), (t + h * .74, 'Horizontal que separa dos zonas')]
+        for pt, tx in notes:
+            L_line(b, x + w + 8, pt, x + w + 40, pt, ACC, .5); b.circle(x + w + 8, pt, 1.6, ACC)
+            note(b, x + w + 46, pt - 3, tx, 'left', INK, 8.4)
+        note(b, x + w + 46, t + h - 8, 'Todas: 1,2 en color guía · sin flechas ni rótulos', 'left', ACC, 8)
+    figure(b, key, cap, 272, draw)
+
+
+def v_img_shapes(b, kind, key, cap):
+    def draw(t):
+        cx, ct, a = M + 110, t + 100, 88
+        L_poly(b, [(cx, ct - a), (cx + a, ct), (cx, ct + a), (cx - a, ct)], LM['ink'], 1.5, LM['white'])
+        a2 = a * .93; L_poly(b, [(cx, ct - a2), (cx + a2, ct), (cx, ct + a2), (cx - a2, ct)], LM['gd'], 1.2)
+        L_text(b, cx, ct + 27, 'A', 80, LM['ink'], SERIF)
+        cota(b, cx + a + 6, ct, cx + a2 + 6 + 6, ct, '7 %')
+        note(b, cx, t + 204, 'Forma: contorno 1,5 · línea dorada interior 1,2')
+        x0, y0, L, T = M + 270, t + 60, 230, 44
+        L_poly(b, [(x0, y0), (x0 + L, y0), (x0 + L, y0 + T), (x0, y0 + T)], LM['ink'], 1.5, LM['white'])
+        L_poly(b, [(x0, y0 + T * .78), (x0 + L, y0 + T * .78), (x0 + L, y0 + T), (x0, y0 + T)], None, 0, LM['cream'])
+        L_hatch(b, [(x0, y0 + T * .78), (x0 + L, y0 + T * .78), (x0 + L, y0 + T), (x0, y0 + T)], 4, .5, LM['thin'])
+        L_line(b, x0, y0 + T * .78, x0 + L, y0 + T * .78, LM['ink'], 1.05); L_poly(b, [(x0, y0), (x0 + L, y0), (x0 + L, y0 + T), (x0, y0 + T)], LM['ink'], 1.5)
+        for k in range(1, 46):
+            xx = x0 + k * L / 46; L_line(b, xx, y0, xx, y0 + (9 if k % 5 == 0 else 5) * .8, LM['ink'], .8)
+        b.arrow(x0 - 18, y0 - 30, x0 + 6, y0 - 6, ACC, .8, 3.5); note(b, x0 - 20, y0 - 40, 'luz', 'left', ACC)
+        L_line(b, x0 + L - 30, y0 + T + 2, x0 + L - 30, y0 + T + 22, ACC, .5); note(b, x0 + L - 34, y0 + T + 26, 'canto en crema con plumilla', 'right', INK, 7.6)
+        L_line(b, x0 + 30, y0 - 4, x0 + 30, y0 - 22, ACC, .5); note(b, x0 + 34, y0 - 26, 'graduación 5 / 9 en 1,05', 'left', INK, 7.6)
+        note(b, x0 + L / 2, t + 204, 'Objeto: de frente, cara de luz y cara de sombra')
+    figure(b, key, cap, 212, draw)
+
+
+def v_img_info_pieces(b, kind, key, cap):
+    def draw(t):
+        g = 10; w = (CW - 2 * g) / 3; h = 90
+        cells = ['Flecha · 1,5 · punta 12 × 9', 'Conector · 1,05 · codos rectos', 'Número en círculo · r 18',
+                 'Cifra destacada · 56 / 21 / 14', 'Icono de línea · 48 · 1,5', 'Cartela de dato · borde 1,05']
+        for i, lab in enumerate(cells):
+            x = M + (i % 3) * (w + g); y = t + (i // 3) * (h + 22); panel(b, x, y, w, h); cx = x + w / 2; cy = y + h / 2 - 6
+            if i == 0:
+                L_line(b, cx - 50, cy, cx + 38, cy, LM['ink'], 1.5); L_poly(b, [(cx + 50, cy), (cx + 38, cy - 4.5), (cx + 38, cy + 4.5)], None, 0, LM['ink'])
+            elif i == 1:
+                L_circle(b, cx - 50, cy - 16, 3, None, 0, LM['ink'])
+                L_poly(b, [(cx - 50, cy - 16), (cx, cy - 16), (cx, cy + 16), (cx + 50, cy + 16)], LM['ink'], 1.05, None, 0, False)
+            elif i == 2:
+                L_circle(b, cx, cy, 18, LM['ink'], 1.5, LM['cream']); L_text(b, cx, cy + 6.3, '1', 18, LM['ink'], 'B')
+            elif i == 3:
+                tw = L_text(b, cx - 12, cy + 12, '75', 40, LM['ink'], 'B'); L_text(b, cx - 12 + tw / 2 + 4, cy + 12, '%', 15, LM['gt'], 'S', 0, 'left')
+                L_text(b, cx, cy + 28, 'RÓTULO', 9, LM['lbl'], 'B', 1)
+            elif i == 4:
+                L_symbol(b, 'llave', cx, cy - 4, 26, 1)
+            else:
+                b.rect(cx - 70, cy - 22, 140, 46, LM['bg'], LM['ink'], 0, width=1.05)
+                L_text(b, cx - 58, cy - 6, 'DATO', 9, LM['gt'], 'B', 1, 'left'); b.txt(cx - 58, cy + 2, 'Texto breve del dato', 8, 'M', INK)
+            note(b, cx, y + h + 6, lab)
+    figure(b, key, cap, 2 * 90 + 40, draw)
+
+
+# -------- bloque 13
+def mini_sheet(b, x, t, w, h):
+    b.rect(x, t, w, h, LM['bg'], BORDER, 3)
+    for d, lw in ((4, .8), (7, .4)):
+        L_poly(b, [(x + d, t + d), (x + w - d, t + d), (x + w - d, t + h - d), (x + d, t + h - d)], LM['ink'], lw)
+
+
+def v_img_axis(b, kind, key, cap):
+    def draw(t):
+        w, h = 170, 230
+        for j, ok in enumerate((True, False)):
+            x = M + 40 + j * (w + 120); mini_sheet(b, x, t, w, h); cx = x + w / 2
+            L_line(b, cx, t + 10, cx, t + h - 10, LM['guide'], .8, dash=None)
+            L_text(b, cx + (0 if ok else 18), t + 30, 'TÍTULO', 9, LM['lbl'], 'B', 2.3)
+            L_main_circle(b, cx, t + 80, .26)
+            dx = 52
+            L_main_circle(b, cx - dx, t + 140, .2, LM['lila']); L_main_circle(b, cx + dx, t + (140 if ok else 160), .2, LM['white'])
+            for sx in (-1, 1):
+                for px, pt in ((22, 186), (34, 198), (26, 210)):
+                    if ok or sx < 0: L_circle(b, cx + sx * (w / 2 - px), t + pt, 2.4, LM['grey'], .6, LM['bg'])
+            L_phrase(b, cx, t + h - 18, ['IDEA', 'ORDEN'], .4)
+            yes_no(b, x + w - 10, t - 4, ok)
+        note(b, M + 40 + w / 2, t + h + 8, 'Eje con piezas centradas y parejas')
+        note(b, M + 40 + w + 120 + w / 2, t + h + 8, 'Título fuera del eje, pareja descolocada')
+    figure(b, key, cap, 250, draw)
+
+
+def v_img_zones(b, kind, key, cap):
+    def draw(t):
+        w, h = 170, 260; x = M + 60; mini_sheet(b, x, t, w, h)
+        zones = [(.08, .26, 'Cabecera', '15–20 %'), (.26, .66, 'Motivo principal', '35–45 %'), (.66, .88, 'Desarrollo', '25–35 %'), (.88, .97, 'Pie', '8–10 %')]
+        fills = [LM['cream'], LM['white'], LM['lila'], LM['cream']]
+        for (a, z, n, p), f in zip(zones, fills):
+            b.rect(x + 12, t + h * a, w - 24, h * (z - a) - 4, f, None, 2)
+            L_line(b, x + w + 6, t + h * (a + z) / 2, x + w + 36, t + h * (a + z) / 2, ACC, .5)
+            b.txt(x + w + 42, t + h * (a + z) / 2 - 8, n, 9, 'B'); b.txt(x + w + 42, t + h * (a + z) / 2 + 3, p, 8, 'M', MUTED)
+        L_line(b, x + w / 2, t + 8, x + w / 2, t + h - 8, LM['guide'], .8)
+    figure(b, key, cap, 262, draw)
+
+
+def v_img_formats(b, kind, key, cap):
+    fm = [('Normal', 1500, 2580), ('9:16', 1500, 2666.67), ('A4', 1500, 2121.32), ('4:5', 1500, 1875), ('1:1', 1500, 1500), ('16:9', 2666.67, 1500)]
+    def draw(t):
+        hmax = 120; x = M
+        widths = [min(hmax * w / h, 140) for _, w, h in fm]
+        gap = (CW - sum(widths)) / (len(fm) - 1)
+        for (n, w, h), ww in zip(fm, widths):
+            hh = ww * h / w; tt = t + hmax - hh
+            mini_sheet(b, x, tt, ww, hh); cx = x + ww / 2
+            L_line(b, cx, tt + 8, cx, tt + hh - 8, LM['guide'], .6)
+            L_main_circle(b, cx, tt + hh * .42, min(ww, hh) / 600)
+            L_line(b, cx - ww * .25, tt + hh * .12, cx + ww * .25, tt + hh * .12, LM['lbl'], 1.6)
+            L_line(b, cx - ww * .2, tt + hh * .92, cx + ww * .2, tt + hh * .92, LM['gd'], 1)
+            b.txt(cx, t + hmax + 8, n, 8.6, 'B', INK, 'center'); b.txt(cx, t + hmax + 20, f'{w:g} × {h:g}'.replace('.', ','), 6.8, 'M', MUTED, 'center')
+            x += ww + gap
+    figure(b, key, cap, 152, draw)
+
+
+def v_img_crops(b, kind, key, cap):
+    def draw(t):
+        h = 170; w1 = 300; w2 = CW - w1 - 14
+        draw_image(b, img_file('04_CROP_TRIAD.png'), M, t, w1, h)
+        draw_image(b, img_file('05_CROP_CORNER.png'), M + w1 + 14, t, w2, h)
+        b.txt(M + w1 / 2, t + h + 6, 'CÍRCULOS, AROS Y UNIONES', 7.4, 'S', ACC, 'center')
+        b.txt(M + w1 + 14 + w2 / 2, t + h + 6, 'ESQUINA DEL MARCO', 7.4, 'S', ACC, 'center')
+        draw_image(b, img_file('06_CROP_FOOTER.png'), M, t + h + 24, CW, 34)
+        b.txt(M + CW / 2, t + h + 64, 'FRASE DE PIE CON ROMBITOS', 7.4, 'S', ACC, 'center')
+    figure(b, key, cap, 250, draw)
+
+
+def v_img_dos(b, kind, key, cap):
+    titles = ['Línea cortada', 'Aro por dentro', 'Grosores fijos', 'Dorado como acento', 'Simetría', 'Letra espaciada']
+    def pair(i, ok, x, t, w, h):
+        cx, ct = x + w / 2, t + h / 2
+        if i == 0:
+            L_text(b, cx, ct + 4, 'TEXTO', 11, LM['lbl'], 'B', 1.3)
+            if ok: L_line(b, x + 6, ct, cx - 24, ct, LM['guide'], 1); L_line(b, cx + 24, ct, x + w - 6, ct, LM['guide'], 1)
+            else: L_line(b, x + 6, ct, x + w - 6, ct, LM['guide'], 1)
+        elif i == 1:
+            L_circle(b, cx, ct, 22, LM['ink'], 2.2, LM['cream']); L_circle(b, cx, ct, 22 - (2 if ok else -4), LM['gd'], .8)
+        elif i == 2:
+            for k in range(3): L_line(b, x + 8, t + 14 + k * 12, x + w - 8, t + 14 + k * 12, LM['ink'], [1.5, 1.05, .75][k] if ok else [2.1, .5, 1.3][k])
+        elif i == 3:
+            L_circle(b, cx, ct, 22, LM['gd'] if not ok else LM['ink'], 2.2, LM['cream'] if ok else LM['goldl'])
+            L_circle(b, cx, ct, 19.8, LM['gd'], .8); L_star(b, cx, ct, 14, LM['gd'] if not ok else None)
+        elif i == 4:
+            L_line(b, cx, t + 6, cx, t + h - 6, LM['guide'], .6)
+            L_circle(b, cx - 18, ct, 8, LM['ink'], 1, LM['lila']); L_circle(b, cx + 18, ct + (0 if ok else 9), 8 if ok else 6, LM['ink'], 1, LM['white'])
+        else:
+            L_text(b, cx, ct + 4, 'RÓTULO', 10, LM['lbl'], 'B', 1.2 if ok else 0)
+        yes_no(b, x + w - 6, t + 6, ok)
+    def draw(t):
+        g = 10; w = (CW - 2 * g) / 3; ph = 58
+        for i, tl in enumerate(titles):
+            x = M + (i % 3) * (w + g); y = t + (i // 3) * (ph + 26)
+            b.txt(x, y, tl.upper(), 7, 'S', ACC)
+            for j, ok in enumerate((True, False)):
+                xx = x + j * (w / 2 + 2); panel(b, xx, y + 10, w / 2 - 2, ph); pair(i, ok, xx, y + 10, w / 2 - 2, ph)
+    figure(b, key, cap, 2 * (58 + 26), draw)
+
+
+# -------- bloque 14
+def v_img_info_triad(b, kind, key, cap):
+    def draw(t):
+        s = .44; cx = M + CW * .25; ct = t + 100
+        L_circle(b, cx, ct + 10, 82, LM['guide'], 1)
+        pts = [(cx, ct - 62), (cx - 72, ct + 56), (cx + 72, ct + 56)]
+        for i in range(3):
+            (x1, t1), (x2, t2) = pts[i], pts[(i + 1) % 3]; d = math.dist(pts[i], pts[(i + 1) % 3]); ux, ut = (x2 - x1) / d, (t2 - t1) / d
+            L_line(b, x1 + ux * 93 * s, t1 + ut * 93 * s, x2 - ux * 93 * s, t2 - ut * 93 * s, LM['ink'], 1.5 * s * 1.4)
+        for (x, tt), f, n in zip(pts, (LM['cream'], LM['lila'], LM['white']), ('PARTE A', 'PARTE B', 'PARTE C')):
+            L_main_circle(b, x, tt, s, f); L_label(b, x, tt + 6, s, n, 'DETALLE')
+        cx = M + CW * .72; ct = t + 100; R = 80
+        L_circle(b, cx, ct, R, LM['guide'], 1)
+        L_main_circle(b, cx, ct, .42, LM['cream'], big=True); L_label(b, cx, ct + 4, .42, 'CENTRO')
+        for k in range(5):
+            a = math.radians(-90 + k * 72); x, tt = cx + math.cos(a) * R, ct + math.sin(a) * R
+            L_line(b, cx + math.cos(a) * (106.5 * .42 + 4), ct + math.sin(a) * (106.5 * .42 + 4), x - math.cos(a) * (93 * .3 + 4), tt - math.sin(a) * (93 * .3 + 4), LM['ink'], .9)
+            L_main_circle(b, x, tt, .3, LM['white']); L_text(b, x, tt + 3, str(k + 1), 10, LM['lbl'], 'B')
+        note(b, M + CW * .25, t + 206, 'Tríada: tres círculos en triángulo')
+        note(b, M + CW * .72, t + 206, 'Radial: partes a ángulos iguales')
+    figure(b, key, cap, 212, draw)
+
+
+def v_img_info_process(b, kind, key, cap):
+    def draw(t):
+        n = 4; step = CW / n; ct = t + 26
+        for k in range(n):
+            cx = M + step * (k + .5)
+            L_circle(b, cx, ct, 15, LM['ink'], 1.3, LM['cream']); L_text(b, cx, ct + 5, str(k + 1), 14, LM['ink'], 'B')
+            L_text(b, cx, ct + 36, f'PASO {k + 1}', 10, LM['lbl'], 'B', 1.2); b.txt(cx, ct + 44, 'frase corta', 7.6, 'M', LM['gt'], 'center')
+            if k < n - 1:
+                L_line(b, cx + 15 + 10, ct, cx + step - 15 - 10 - 9, ct, LM['ink'], 1.2)
+                L_poly(b, [(cx + step - 25, ct), (cx + step - 34, ct - 3.6), (cx + step - 34, ct + 3.6)], None, 0, LM['ink'])
+        y = t + 106
+        L_line(b, M + 10, y, M + CW - 10, y, LM['ink'], 1.5)
+        for k in range(5):
+            x = M + 40 + k * (CW - 80) / 4
+            L_diamond(b, x, y, 9, 9, LM['gd'], LM['ink'], .8)
+            L_text(b, x, y - 12, str(1900 + k * 25), 10, LM['gt'], 'B', 1)
+            L_text(b, x, y + 22, 'HITO', 9, LM['lbl'], 'B', 1.1)
+    figure(b, key, cap, 134, draw)
+
+
+def v_img_info_compare(b, kind, key, cap):
+    def draw(t):
+        cx = M + CW / 2; w = 200
+        L_line(b, cx, t, cx, t + 132, LM['guide'], 1)
+        for sx, n, f in ((-1, 'OPCIÓN A', LM['cream']), (1, 'OPCIÓN B', LM['lila'])):
+            x = cx + sx * (20 + w / 2)
+            L_main_circle(b, x, t + 32, .3, f); L_text(b, x, t + 35, 'A' if sx < 0 else 'B', 18, LM['ink'], SERIF)
+            L_text(b, x, t + 78, n, 11, LM['lbl'], 'B', 1.3)
+            for k, r in enumerate(('RASGO UNO', 'RASGO DOS', 'RASGO TRES')):
+                y = t + 96 + k * 15
+                L_text(b, x, y, r, 8, LM['lbl'], 'B', .9); L_diamond(b, x - 60, y - 3, 4, 5.5, LM['gd'])
+        y = t + 140
+        for k, (v, u, lab) in enumerate((('12', '%', 'RÓTULO'), ('340', '', 'RÓTULO'), ('3', 'x', 'RÓTULO'))):
+            x = M + CW * (k + .5) / 3
+            tw = L_text(b, x, y + 20, v, 30, LM['ink'], 'B')
+            if u: L_text(b, x + tw / 2 + 3, y + 20, u, 12, LM['gt'], 'S', 0, 'left')
+            L_text(b, x, y + 36, lab, 8.5, LM['lbl'], 'B', .9)
+    figure(b, key, cap, 180, draw)
+
+
+# -------- bloque 15
+def v_img_eye_steps(b, kind, key, cap):
+    labs = ['1 · Simplificar', '2 · Encajar', '3 · Grosores', '4 · Color', '5 · Sombra y rótulo']
+    def draw(t):
+        g = 8; w = (CW - 4 * g) / 5; s = .36
+        for k, lab in enumerate(labs):
+            x = M + k * (w + g); panel(b, x, t, w, 100); cx = x + w / 2; ct = t + 48
+            if k >= 1:
+                if k >= 3: L_main_circle(b, cx, ct, s, LM['cream'])
+                else: L_circle(b, cx, ct, 93 * s, LM['ink'], .6 if k == 1 else 3.75 * s)
+            if k == 1:
+                cota(b, cx - 93 * s * .55, ct + 26, cx + 93 * s * .55, ct + 26, '55 %', side=-1)
+            L_eye(b, cx, ct - (4 if k == 4 else 0), 93 * s * .55, s * 1.4, step=k + 1)
+            if k == 4: L_label(b, cx, ct + 22, s * .9, 'OJO')
+            b.txt(cx, t + 105, lab, 7.6, 'S', ACC, 'center')
+    figure(b, key, cap, 114, draw)
+
+
+def v_img_eye_donts(b, kind, key, cap):
+    labs = ['Demasiado detalle', 'Degradado', 'Todo en dorado', 'Descentrado y grande']
+    def draw(t):
+        g = 10; w = (CW - 3 * g) / 4; s = .4
+        for k, lab in enumerate(labs):
+            x = M + k * (w + g); panel(b, x, t, w, 100); cx = x + w / 2; ct = t + 48
+            if k == 0:
+                L_main_circle(b, cx, ct, s); L_eye(b, cx, ct, 22, s * 1.4)
+                c = b.c; c.saveState(); c.setStrokeColor(LM['thin']); c.setLineWidth(.3)
+                for j in range(40):
+                    a = j / 40 * 2 * math.pi; c.line(cx + math.cos(a) * 8, H - (ct + math.sin(a) * 8), cx + math.cos(a) * 26, H - (ct + math.sin(a) * 14))
+                c.restoreState()
+            elif k == 1:
+                c = b.c; c.saveState(); p = c.beginPath(); p.circle(cx, H - ct, 93 * s); c.clipPath(p, stroke=0, fill=0)
+                c.radialGradient(cx, H - ct, 93 * s, [HexColor('#FFF3C4'), HexColor('#B98A3A')], positions=[0, 1]); c.restoreState()
+                L_circle(b, cx, ct, 93 * s, LM['ink'], 3.75 * s); L_eye(b, cx, ct, 22, s * 1.4, 4)
+            elif k == 2:
+                L_circle(b, cx, ct, 93 * s, LM['gd'], 3.75 * s, LM['goldl']); L_circle(b, cx, ct, 85 * s, LM['gd'], 1.2 * s)
+                c = b.c; c.saveState(); c.setStrokeColor(LM['gd']); c.setLineWidth(1.5 * s * 1.4)
+                c.ellipse(cx - 22, H - ct - 11, cx + 22, H - ct + 11, stroke=1, fill=0); c.restoreState()
+                L_circle(b, cx, ct, 8, None, 0, LM['gd'])
+            else:
+                L_main_circle(b, cx, ct, s); L_eye(b, cx + 9, ct - 8, 34, s * 1.4, 4)
+            yes_no(b, x + w - 9, t + 9, False)
+            b.txt(cx, t + 105, lab, 7.6, 'S', ACC, 'center')
+    figure(b, key, cap, 108, draw)
+
+
+def closing_square_compass(b, cx0, t0, k):
+    """Escuadra, compás y G con el estilo de imágenes (bloques 11-16), para la página final.
+    Dibujado en un lienzo de 626 de ancho (eje en x = 313) y escalado por k."""
+    X = lambda x: cx0 + (x - 313) * k
+    T = lambda y: t0 + (y - 90) * k
+    P = lambda pts: [(X(x), T(y)) for x, y in pts]
+    w = lambda v: v * k * 1.25
+    ink, gd = LM['ink'], LM['gd']
+    # líneas de construcción
+    L_line(b, X(313), T(60), X(313), T(96), LM['guide'], w(.75))
+    L_circle(b, X(313), T(385), 215 * k, LM['guide'], w(.75))
+    for y in (367, 600):
+        L_line(b, X(70), T(y), X(556), T(y), LM['guide'], w(.75))
+    # rombo con aro dorado
+    D = [(313, 232), (466, 385), (313, 538), (160, 385)]
+    sc = lambda f: [(313 + (x - 313) * f, 385 + (y - 385) * f) for x, y in D]
+    L_poly(b, P(D), ink, w(1.8), LM['white'])
+    L_poly(b, P(sc(.93)), gd, w(1.5)); L_poly(b, P(sc(.86)), ink, w(1.05))
+    for f in (1, -1):  # volutas en las puntas
+        y = 538 if f > 0 else 232
+        for sx in (1, -1):
+            L_smooth(b, P(spiral_pts(313 + sx * 14, y - f * 26, 9, 2, 1.1, math.pi * (.5 if f > 0 else 1.5), sx)), ink, w(1.05))
+    # escuadra
+    O, ARM, TH = (313, 600), 330, 44
+    L_ = (O[0] - ARM * .7071, O[1] - ARM * .7071); R_ = (O[0] + ARM * .7071, O[1] - ARM * .7071)
+    inner = (O[0], O[1] - TH * 1.4142)
+    Li = (L_[0] + TH * .7071, L_[1] - TH * .7071); Ri = (R_[0] - TH * .7071, R_[1] - TH * .7071)
+    L_poly(b, P([L_, O, R_, Ri, inner, Li]), None, 0, LM['cream'])
+    L_hatch(b, P([L_, O, (O[0], O[1] - 10), (L_[0] + 7, L_[1] - 7)]), w(3), w(.5), LM['gt'], -45)
+    L_hatch(b, P([R_, O, (O[0], O[1] - 10), (R_[0] - 7, R_[1] - 7)]), w(3), w(.5), LM['gt'], 45)
+    L_poly(b, P([L_, O, R_, Ri, inner, Li]), ink, w(1.8))
+    gl = lambda f: [(L_[0] + TH * .7071 * f, L_[1] - TH * .7071 * f), (O[0], O[1] - TH * 1.4142 * f), (R_[0] - TH * .7071 * f, R_[1] - TH * .7071 * f)]
+    L_poly(b, P(gl(.25)), gd, w(1.05), None, 0, False); L_poly(b, P(gl(.8)), LM['thin'], w(.75), None, 0, False)
+    for sx in (1, -1):
+        for j in range(1, 26):
+            u = j / 26; x = O[0] + sx * ARM * .7071 * u; y = O[1] - ARM * .7071 * u; ln = 9 if j % 5 == 0 else 5
+            L_line(b, X(x), T(y), X(x - sx * ln * .7071), T(y - ln * .7071), ink, w(1.05))
+    # G clásica: relleno crema, contorno de tinta y plumilla dorada en la derecha
+    c = b.c; size = 190 * k; gx, gy = X(313), H - T(455)
+    gw = pdfmetrics.stringWidth('G', SERIF, size)
+    c.saveState(); to = c.beginText(gx - gw / 2, gy); to.setFont(SERIF, size); to.setTextRenderMode(7); to.textOut('G'); c.drawText(to)
+    c.setFillColor(LM['cream']); c.rect(gx - gw, gy - size, 2 * gw, 2 * size, fill=1, stroke=0)
+    c.setStrokeColor(gd); c.setLineWidth(w(.6))
+    for d in range(0, 160, 3):
+        c.line(gx + d * k, gy + 140 * k, gx + d * k + 60 * k, gy - 40 * k)
+    c.restoreState()
+    c.saveState(); c.setStrokeColor(ink); c.setLineWidth(w(1.8)); c.setLineJoin(1)
+    to = c.beginText(gx - gw / 2, gy); to.setFont(SERIF, size); to.setTextRenderMode(1); to.textOut('G'); c.drawText(to); c.restoreState()
+    # compás
+    HX, HY = 313, 128
+    for sx in (-1, 1):
+        tip = (313 + sx * 252, 600); dx, dy = tip[0] - HX, tip[1] - HY; Lg = math.hypot(dx, dy)
+        ux, uy = dx / Lg, dy / Lg; nx, ny = -uy, ux
+        a = (HX + ux * 30 + nx * 17, HY + uy * 30 + ny * 17); bb = (HX + ux * 30 - nx * 17, HY + uy * 30 - ny * 17)
+        cc = (tip[0] - nx * 2, tip[1] - ny * 2); dd = (tip[0] + nx * 2, tip[1] + ny * 2)
+        L_poly(b, P([a, bb, cc, dd]), None, 0, LM['white'])
+        shade = [bb, (HX + ux * 30 - nx * 17 * .55, HY + uy * 30 - ny * 17 * .55), (tip[0] - ux * 40 - nx * 2 * .55, tip[1] - uy * 40 - ny * 2 * .55), cc] \
+            if sx > 0 else [a, (HX + ux * 30 + nx * 17 * .55, HY + uy * 30 + ny * 17 * .55), (tip[0] - ux * 40 + nx * 2 * .55, tip[1] - uy * 40 + ny * 2 * .55), dd]
+        L_hatch(b, P(shade), w(2.8), w(.5), LM['thin'], 45)
+        L_poly(b, P([a, bb, cc, dd]), ink, w(1.8), None, 1)
+        for f in (.55, -.55):
+            p0 = (HX + ux * 40 + nx * 17 * f, HY + uy * 40 + ny * 17 * f); p1 = (tip[0] - ux * 40 + nx * 2 * f, tip[1] - uy * 40 + ny * 2 * f)
+            L_line(b, X(p0[0]), T(p0[1]), X(p1[0]), T(p1[1]), LM['thin'], w(.75))
+        cxp, cyp = HX + ux * 105, HY + uy * 105
+        L_smooth(b, P([(cxp + nx * 8 - ux * 22, cyp + ny * 8 - uy * 22), (cxp - nx * 8, cyp - ny * 8), (cxp + nx * 6 + ux * 24, cyp + ny * 6 + uy * 24)]), ink, w(1.05))
+    # bisagra: círculo con aro dorado y ojo
+    L_line(b, X(HX), T(HY - 36), X(HX), T(HY - 52), ink, w(1.8))
+    L_circle(b, X(HX), T(HY), 34 * k, ink, w(3.75), LM['cream']); L_circle(b, X(HX), T(HY), 28.5 * k, gd, w(1.5))
+    L_eye(b, X(HX), T(HY + 1), 19 * k, k * 1.25)
+    # estrellitas a los lados, en pareja
+    for sx in (-1, 1):
+        L_star(b, X(313 + sx * 190), T(200), 14 * k * 1.6); L_star(b, X(313 + sx * 215), T(222), 8 * k * 1.6)
+
+
+IMG_VISUALS = {'img_models': v_img_models, 'img_palette': v_img_palette, 'img_type': v_img_type, 'img_strokes': v_img_strokes,
+               'img_gaps': v_img_gaps, 'img_hatch': v_img_hatch, 'img_frame': v_img_frame, 'img_circles': v_img_circles,
+               'img_labels': v_img_labels, 'img_ornaments': v_img_ornaments, 'img_construction': v_img_construction,
+               'img_shapes': v_img_shapes, 'img_info_pieces': v_img_info_pieces, 'img_axis': v_img_axis, 'img_zones': v_img_zones,
+               'img_formats': v_img_formats, 'img_crops': v_img_crops, 'img_dos': v_img_dos, 'img_info_triad': v_img_info_triad,
+               'img_info_process': v_img_info_process, 'img_info_compare': v_img_info_compare, 'img_eye_steps': v_img_eye_steps,
+               'img_eye_donts': v_img_eye_donts}
+
+
+VISUALS = {'img_models': v_img_models, 'img_palette': v_img_palette, 'img_type': v_img_type, 'img_strokes': v_img_strokes,
+               'img_gaps': v_img_gaps, 'img_hatch': v_img_hatch, 'img_frame': v_img_frame, 'img_circles': v_img_circles,
+               'img_labels': v_img_labels, 'img_ornaments': v_img_ornaments, 'img_construction': v_img_construction,
+               'img_shapes': v_img_shapes, 'img_info_pieces': v_img_info_pieces, 'img_axis': v_img_axis, 'img_zones': v_img_zones,
+               'img_formats': v_img_formats, 'img_crops': v_img_crops, 'img_dos': v_img_dos, 'img_info_triad': v_img_info_triad,
+               'img_info_process': v_img_info_process, 'img_info_compare': v_img_info_compare, 'img_eye_steps': v_img_eye_steps,
+               'img_eye_donts': v_img_eye_donts}
+
+
+VISUALS = {'img_models': v_img_models, 'img_palette': v_img_palette, 'img_type': v_img_type, 'img_strokes': v_img_strokes,
+               'img_gaps': v_img_gaps, 'img_hatch': v_img_hatch, 'img_frame': v_img_frame, 'img_circles': v_img_circles,
+               'img_labels': v_img_labels, 'img_ornaments': v_img_ornaments, 'img_construction': v_img_construction,
+               'img_shapes': v_img_shapes, 'img_info_pieces': v_img_info_pieces, 'img_axis': v_img_axis, 'img_zones': v_img_zones,
+               'img_formats': v_img_formats, 'img_crops': v_img_crops, 'img_dos': v_img_dos, 'img_info_triad': v_img_info_triad,
+               'img_info_process': v_img_info_process, 'img_info_compare': v_img_info_compare, 'img_eye_steps': v_img_eye_steps,
+               'img_eye_donts': v_img_eye_donts}
+
+
+VISUALS = {'img_models': v_img_models, 'img_palette': v_img_palette, 'img_type': v_img_type, 'img_strokes': v_img_strokes,
+               'img_gaps': v_img_gaps, 'img_hatch': v_img_hatch, 'img_frame': v_img_frame, 'img_circles': v_img_circles,
+               'img_labels': v_img_labels, 'img_ornaments': v_img_ornaments, 'img_construction': v_img_construction,
+               'img_shapes': v_img_shapes, 'img_info_pieces': v_img_info_pieces, 'img_axis': v_img_axis, 'img_zones': v_img_zones,
+               'img_formats': v_img_formats, 'img_crops': v_img_crops, 'img_dos': v_img_dos, 'img_info_triad': v_img_info_triad,
+               'img_info_process': v_img_info_process, 'img_info_compare': v_img_info_compare, 'img_eye_steps': v_img_eye_steps,
+               'img_eye_donts': v_img_eye_donts}
+
+
+VISUALS = {'img_models': v_img_models, 'img_palette': v_img_palette, 'img_type': v_img_type, 'img_strokes': v_img_strokes,
+               'img_gaps': v_img_gaps, 'img_hatch': v_img_hatch, 'img_frame': v_img_frame, 'img_circles': v_img_circles,
+               'img_labels': v_img_labels, 'img_ornaments': v_img_ornaments, 'img_construction': v_img_construction,
+               'img_shapes': v_img_shapes, 'img_info_pieces': v_img_info_pieces, 'img_axis': v_img_axis, 'img_zones': v_img_zones,
+               'img_formats': v_img_formats, 'img_crops': v_img_crops, 'img_dos': v_img_dos, 'img_info_triad': v_img_info_triad,
+               'img_info_process': v_img_info_process, 'img_info_compare': v_img_info_compare, 'img_eye_steps': v_img_eye_steps,
+               'img_eye_donts': v_img_eye_donts}
+
+
+VISUALS = {'img_models': v_img_models, 'img_palette': v_img_palette, 'img_type': v_img_type, 'img_strokes': v_img_strokes,
+               'img_gaps': v_img_gaps, 'img_hatch': v_img_hatch, 'img_frame': v_img_frame, 'img_circles': v_img_circles,
+               'img_labels': v_img_labels, 'img_ornaments': v_img_ornaments, 'img_construction': v_img_construction,
+               'img_shapes': v_img_shapes, 'img_info_pieces': v_img_info_pieces, 'img_axis': v_img_axis, 'img_zones': v_img_zones,
+               'img_formats': v_img_formats, 'img_crops': v_img_crops, 'img_dos': v_img_dos, 'img_info_triad': v_img_info_triad,
+               'img_info_process': v_img_info_process, 'img_info_compare': v_img_info_compare, 'img_eye_steps': v_img_eye_steps,
+               'img_eye_donts': v_img_eye_donts}
 
 
 VISUALS = {'symbol_cover': v_symbol_cover, 'measures_table': v_measures_table, 'closing_example': v_closing_example, 'symbol_sheet': v_symbol_sheet, 'symbol_cards': v_symbol_cards, 'use_flow': v_use_flow, 'config_sheet': v_config_sheet, 'tonal_scale': v_tonal_scale, 'palette_demo': v_palette_demo,
@@ -1324,6 +2242,9 @@ VISUALS = {'symbol_cover': v_symbol_cover, 'measures_table': v_measures_table, '
            'photo_labels': v_photo_labels, 'crop_demo': v_crop_demo, 'flow_diagram': v_flow_diagram,
            'hierarchy_diagram': v_hierarchy_diagram, 'timeline_diagram': v_timeline, 'concept_map': v_concept_map,
            'icon_sheet': v_icon_sheet, 'review_flow': v_review_flow}
+
+
+VISUALS.update(IMG_VISUALS)
 
 
 # ---------------------------------------------------------------- montaje

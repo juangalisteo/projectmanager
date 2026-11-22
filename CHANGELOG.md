@@ -2,6 +2,23 @@
 
 Cambios importantes, de la versión más nueva a la más antigua. Versiones según [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.3.0] · 2026-11-22
+
+### Añadido
+
+- **Manual «general + imágenes»** (`PLANTILLA/00_MODULOS/MANUAL_IMAGENES`): el manual general entero, sin cambios, más seis bloques sobre imágenes e infografías sacados de la lámina modelo: fundamentos (paleta y uso de cada color, letras con su escala y espaciado, siete grosores de línea, cortes y aire, plumilla y luz), catálogo de piezas con cotas (marco con volutas, cuatro tipos de círculo, rótulos, adornos, construcción, formas y piezas de infografía), composición sobre el eje y seis formatos (normal, 9:16, A4, 4:5, 1:1 y 16:9), infografías, método para crear un elemento nuevo y cómo generar imágenes con IA. PDF de 70 páginas, 52 figuras y 20 tablas.
+- La página final de ese manual lleva la escuadra, el compás y la G dibujados con el estilo de imágenes, y la frase «Una idea simple / da forma a tu realidad.» (decisión del propietario). El manual general mantiene su libro y su frase.
+- Prompts nuevos en ese manual: crear una imagen en SVG, prompt maestro para un generador de imágenes y revisión de una imagen. Kit de imágenes en SVG (piezas base, lienzos de los seis formatos y una composición de ejemplo) y la fuente FreeSerif Bold para las capitales.
+- Botón **★** en «03 · Color principal», a la izquierda de «Color», con el aspecto del botón de ChatGPT. En rojo (por defecto), el Documento sale con el manual general; en verde, con el de «general + imágenes». Cada proyecto lleva un solo manual. La ficha lo apunta en `documento.manual_version`. Desde la consola: `--imagenes`.
+- 19 pruebas automáticas: cuatro nuevas (manual general, manual con imágenes, la parte general idéntica en los dos manuales y color solo en Documento).
+
+### Cambiado
+
+- **«03 · Color principal» solo funciona con Documento.** Con Proyecto o General se queda en gris y no se puede pulsar, y el proyecto sale con la paleta predeterminada.
+- El generador del manual (`02_BUILD_MANUAL.py`) es el mismo para las dos versiones: dibuja las figuras de imágenes y, si hay muchos bloques, sigue el índice en una segunda página. El PDF del manual general sale igual que antes.
+- Textos más cortos en la sección 03: con Proyecto y General pone «Solo con Documento»; con Documento, «Pulsa ↻ para elegir un color aleatorio.» (el cuadro de color se sigue pudiendo pulsar). Al pulsar la ★, la línea de estado dice solo qué manual saldrá.
+- En la plantilla de Documento, `AGENTS.md` y `README.md` nombran los prompts de imágenes solo si el proyecto lleva ese manual (bloques `[[SI IMAGENES]]`).
+
 ## [1.2.0] · 2026-11-10
 
 ### Añadido

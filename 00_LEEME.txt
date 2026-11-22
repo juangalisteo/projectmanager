@@ -1,4 +1,4 @@
-PROJECT MANAGER v1.2.0 · CREA PROYECTOS ORDENADOS PARA TRABAJAR CON IA
+PROJECT MANAGER v1.3.0 · CREA PROYECTOS ORDENADOS PARA TRABAJAR CON IA
 
 PARA QUÉ SIRVE
 Crea en un clic la carpeta de un proyecto nuevo con todo lo necesario para
@@ -21,15 +21,20 @@ CÓMO SE USA
    (mayúsculas, sin tildes y con _ en lugar de espacios).
 3. 02 Tipo:
    - Documento: libros, manuales, investigaciones y documentación.
-     Incluye el manual de estilo.
+     Incluye el manual de estilo (general o, con la estrella, general +
+     imágenes).
    - Proyecto: software, aplicaciones, páginas web y desarrollo, con Git.
    - General: cualquier otro trabajo, con lo mínimo para empezar: reglas,
      estado y una carpeta 01_WORK.
-4. 03 Color principal: en "Color", pulsa el cuadro para elegirlo, escribe su
-   código (#RRGGBB) o pulsa el icono de la flecha circular para uno al azar.
-   Debajo ves la paleta que sale de él (fondo, texto, acento, recuadros y
-   bordes). "Predeterminado" usa la paleta del sistema: dorado, azul pizarra
-   y blanco roto.
+4. 03 Color principal (solo con Documento; con Proyecto y General se queda
+   en gris y sale la paleta predeterminada): en "Color", pulsa el cuadro
+   para elegirlo, escribe su código (#RRGGBB) o pulsa el icono de la flecha
+   circular para uno al azar. Debajo ves la paleta que sale de él (fondo,
+   texto, acento, recuadros y bordes). "Predeterminado" usa la paleta del
+   sistema: dorado, azul pizarra y blanco roto.
+   La estrella, a la izquierda de "Color", elige el manual: en rojo, el
+   manual general; en verde, el manual "general + imágenes" (el mismo manual
+   más el estilo de imágenes e infografías, sus prompts y un kit de piezas).
 5. 04 Asistentes: Claude va siempre. Activa ChatGPT (Codex) si lo usas:
    en verde está activado y en rojo, desactivado.
 6. 05 Carpeta de destino: dónde se creará el proyecto. Se recuerda para la
@@ -73,7 +78,7 @@ Todo lo que se copia está en PLANTILLA. Los textos llevan etiquetas que se
 rellenan al crear el proyecto: [PROYECTO], [CARPETA], [RUTA], [TIPO], [COLOR],
 [FECHA], [FECHA_ISO], [AUTOR] y [GITHUB]. Los bloques [[SI DOCUMENTO]] ...
 [[FIN]] solo aparecen en ese tipo de proyecto (también PROYECTO, GENERAL, CODEX,
-y varios a la vez: [[SI DOCUMENTO|GENERAL]]). Lo de
+IMAGENES, y varios a la vez: [[SI DOCUMENTO|GENERAL]]). Lo de
 PLANTILLA\00_MODULOS se copia tal cual, sin etiquetas.
 El autor y tu usuario de GitHub están en APP\projectmanager_ajustes.json.
 
@@ -86,7 +91,8 @@ PROJECT_MANAGER
                                 el icono y tus ajustes
   PLANTILLA\                    Lo que se copia a cada proyecto
     00_MODULOS\                 Lo que comparten los tipos: reglas de escritura,
-                                normas de nombres y manual de estilo
+                                normas de nombres, manual de estilo (MANUAL)
+                                y lo que cambia con imágenes (MANUAL_IMAGENES)
     01_GENERAL\                 General (00_BASE y, con ChatGPT, 01_CODEX)
     02_DOCUMENTO\               Documento (00_BASE y 01_CODEX)
     03_PROYECTO\                Proyecto (00_BASE, 01_CODEX y 02_LICENSE)
@@ -100,7 +106,7 @@ PROJECT_MANAGER
 SI ALGO FALLA
 Los errores de la ventana se guardan en APP\projectmanager_errores.log.
 También puedes crear un proyecto desde la consola:
-  python APP\creador.py --nombre "Mi proyecto" --tipo DOCUMENTO --destino "C:\ruta" --color "#2E7D6B"
+  python APP\creador.py --nombre "Mi proyecto" --tipo DOCUMENTO --destino "C:\ruta" --color "#2E7D6B" --imagenes
 
 Autor: Juan Bautista Galisteo Marqués (@juangalisteo)
 Licencia: GPL-3.0 (archivo LICENSE)

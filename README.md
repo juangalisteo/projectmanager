@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/versi%C3%B3n-1.2.0-C7A15B?style=flat-square&labelColor=121214" alt="Versión 1.2.0">
+  <img src="https://img.shields.io/badge/versi%C3%B3n-1.3.0-C7A15B?style=flat-square&labelColor=121214" alt="Versión 1.3.0">
   <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-C7A15B?style=flat-square&labelColor=121214" alt="Windows 10 y 11">
   <img src="https://img.shields.io/badge/Python-3.10%2B-C7A15B?style=flat-square&labelColor=121214" alt="Python 3.10 o posterior">
   <img src="https://img.shields.io/badge/licencia-GPL--3.0-C7A15B?style=flat-square&labelColor=121214" alt="Licencia GPL-3.0">
@@ -53,7 +53,8 @@ Project Manager lo deja escrito desde el primer minuto. Cada proyecto nuevo trae
 | **Prompt de arranque** | `00_INICIO_CHAT.md` lleva solo el primer mensaje para Claude, con la ruta del proyecto ya escrita: se copia o se adjunta entero en un chat nuevo y la IA sabe qué hacer. El botón **Prompt · IA** lo copia. |
 | **Reglas para la IA** | `AGENTS.md` con las reglas de trabajo, las **normas de nombres** de carpetas y archivos y las **reglas de escritura** (basadas en la guía de Wikipedia sobre los rasgos del texto escrito por IA). |
 | **Memoria en archivos** | `AGENT_AI/ESTADO.md` dice dónde se quedó el trabajo y qué sigue. Los tipos Documento y Proyecto añaden plan y bitácora. |
-| **Color principal** | Elige un color con el selector propio (cuadro de saturación y brillo, barra de tono y código), pulsa **↻** para uno al azar o usa el **Predeterminado**. Debajo se ve en vivo la paleta que sale de él. |
+| **Color principal** | Solo en Documento. Elige un color con el selector propio (cuadro de saturación y brillo, barra de tono y código), pulsa **↻** para uno al azar o usa el **Predeterminado**. Debajo se ve en vivo la paleta que sale de él. Con Proyecto y General se queda en gris. |
+| **Manual con imágenes** | El botón **★** (verde = activado) cambia el manual del Documento por la versión «general + imágenes»: el mismo manual más el estilo de imágenes e infografías, con sus prompts y un kit de piezas en SVG. |
 | **Paleta desde un color** | De un solo color se calculan 13 tonos (fondo, texto, acento, recuadros, bordes…) con el contraste comprobado, para que el documento final se lea bien. |
 | **ChatGPT opcional** | El interruptor **ChatGPT** (verde = activado) añade las reglas y la bitácora de Codex. Claude va siempre. |
 | **Actualizar ruta** | Si mueves o cambias de nombre la carpeta de un proyecto, el botón **Actualizar ruta** escribe la ruta nueva en el prompt de arranque, el `README.md` y la ficha, de una vez. |
@@ -64,7 +65,7 @@ Project Manager lo deja escrito desde el primer minuto. Cada proyecto nuevo trae
 
 | Tipo | Para qué | Qué añade |
 |---|---|---|
-| **Documento** | Libros, manuales, investigaciones y documentación. | Ficha con la paleta, plan, bitácora de Claude, `01_MATERIALS/` (tu material), `02_WORK/` (borradores), `03_EXPORT/` (lo terminado) y el **manual de estilo** con su generador de PDF. |
+| **Documento** | Libros, manuales, investigaciones y documentación. | Ficha con la paleta, plan, bitácora de Claude, `01_MATERIALS/` (tu material), `02_WORK/` (borradores), `03_EXPORT/` (lo terminado) y el **manual de estilo** con su generador de PDF (general o, con ★, general + imágenes). |
 | **Proyecto** | Software, aplicaciones, páginas web y desarrollo. | Lo necesario para Git y GitHub: `README.md`, `CHANGELOG.md`, `.gitignore`, `LICENSE` (GPL-3.0), `CLAUDE.md`, guía de prompts, `docs/`, `tests/` y `AGENT_AI/` completo, con asesor (app de escritorio) y ejecutor (Claude Code) separados. |
 | **General** | Cualquier otro trabajo. | Lo mínimo para empezar: reglas, estado y la carpeta `01_WORK/`. |
 
@@ -87,7 +88,7 @@ Todos llevan `README.md`, `00_INICIO_CHAT.md` (el prompt de arranque), `AGENTS.m
 
 1. **01 · Nombre del proyecto**: por ejemplo «Mi proyecto». La carpeta se llamará `MI_PROYECTO` (mayúsculas, sin tildes y con `_` en lugar de espacios).
 2. **02 · Tipo**: Documento, Proyecto o General.
-3. **03 · Color principal**: pulsa el cuadro para elegirlo, escribe el código (`#RRGGBB`) o pulsa **↻** para uno al azar. **Predeterminado** usa la paleta del sistema.
+3. **03 · Color principal** (solo Documento): pulsa el cuadro para elegirlo, escribe el código (`#RRGGBB`) o pulsa **↻** para uno al azar. **Predeterminado** usa la paleta del sistema. Pon la **★** en verde si quieres el manual con imágenes.
 4. **04 · Asistentes**: Claude va siempre. Activa **ChatGPT** si también trabajas con él.
 5. **05 · Carpeta de destino**: dónde se creará el proyecto. Se recuerda para la próxima vez.
 6. Pulsa **Crear proyecto**. Se abre la carpeta nueva.
@@ -98,7 +99,7 @@ Todos llevan `README.md`, `00_INICIO_CHAT.md` (el prompt de arranque), `AGENTS.m
 También funciona desde la consola:
 
 ```bat
-python APP\creador.py --nombre "Mi proyecto" --tipo DOCUMENTO --destino "C:\ruta" --color "#2E7D6B"
+python APP\creador.py --nombre "Mi proyecto" --tipo DOCUMENTO --destino "C:\ruta" --color "#2E7D6B" --imagenes
 python APP\creador.py --nombre "Mi app" --tipo PROYECTO --destino "C:\ruta" --codex
 python APP\creador.py --actualizar-ruta "C:\nueva\ruta\MI_APP"
 ```
@@ -118,7 +119,7 @@ Todo lo que se copia a cada proyecto está en `PLANTILLA\`. Los textos llevan et
 | `[FECHA]` · `[FECHA_ISO]` | La fecha de hoy (`07/11/2026` y `2026-11-07`) |
 | `[AUTOR]` · `[GITHUB]` | Tu nombre y tu usuario de GitHub |
 
-Los bloques `[[SI DOCUMENTO]] … [[FIN]]` solo aparecen en ese tipo (también `PROYECTO`, `GENERAL` y `CODEX`, y varios a la vez: `[[SI DOCUMENTO|GENERAL]]`). `[[NO CODEX]] … [[FIN]]` aparece solo cuando ChatGPT está desactivado.
+Los bloques `[[SI DOCUMENTO]] … [[FIN]]` solo aparecen en ese tipo (también `PROYECTO`, `GENERAL`, `CODEX` e `IMAGENES`, y varios a la vez: `[[SI DOCUMENTO|GENERAL]]`). `[[NO CODEX]] … [[FIN]]` aparece solo cuando ChatGPT está desactivado.
 
 ## Estructura del proyecto
 
@@ -135,7 +136,8 @@ PROJECT_MANAGER
 ├── PLANTILLA\                    Lo que se copia a cada proyecto
 │   ├── 00_MODULOS\               Lo que comparten los tipos
 │   │   ├── ESCRITURA\            Normas de nombres y reglas de escritura
-│   │   └── MANUAL\               Manual de estilo, su PDF, prompts y generador
+│   │   ├── MANUAL\               Manual de estilo, su PDF, prompts y generador
+│   │   └── MANUAL_IMAGENES\      Lo que cambia en la versión «general + imágenes»
 │   ├── 01_GENERAL\
 │   ├── 02_DOCUMENTO\
 │   └── 03_PROYECTO\              Incluye la licencia GPL-3.0
@@ -158,7 +160,7 @@ python -m unittest discover tests
 |---|---|
 | **Python 3** | Lenguaje del programa, sin paquetes externos |
 | **Tkinter** | Ventana de escritorio, con diseño propio |
-| **unittest** | Pruebas automáticas del creador (los tres tipos, con y sin ChatGPT) |
+| **unittest** | Pruebas automáticas del creador (los tres tipos, con y sin ChatGPT, y los dos manuales) |
 | **ReportLab** *(opcional)* | Genera el PDF del manual de estilo |
 
 ## Diseño
@@ -180,6 +182,7 @@ Fondo grafito monocromo y un solo color de señal, el dorado. Es el mismo sistem
 - [x] Pruebas automáticas del creador (v1.0.0)
 - [x] Prompt de arranque de un solo mensaje, listo para copiar o adjuntar (v1.1.0)
 - [x] Botón «Actualizar ruta» para un proyecto que se ha movido de carpeta (v1.2.0)
+- [x] Manual «general + imágenes» y botón ★; color principal solo en Documento (v1.3.0)
 - [ ] GIF de la aplicación en marcha
 - [ ] Versión `.exe` que no necesite Python instalado
 
@@ -195,8 +198,8 @@ Distribuido bajo la **Licencia Pública General de GNU v3.0** (GPL-3.0 o posteri
 
 Puedes usar, estudiar, compartir y modificar Project Manager. Si repartes una versión modificada, también tiene que publicarse bajo la GPL y con su código fuente.
 
-Las fuentes Inter del manual de estilo se distribuyen con su propia licencia, la SIL Open Font License (`PLANTILLA/00_MODULOS/MANUAL/03_SOURCE/03_FONTS/OFL.txt`).
+Las fuentes Inter del manual de estilo se distribuyen con su propia licencia, la SIL Open Font License (`PLANTILLA/00_MODULOS/MANUAL/03_SOURCE/03_FONTS/OFL.txt`). La fuente FreeSerif Bold del manual con imágenes es de GNU FreeFont, con licencia GPL y excepción de fuentes.
 
 Copyright © 2026 Juan Bautista Galisteo Marqués.
 
-<p align="center"><sub>Project Manager v1.2.0 · Juan Bautista Galisteo Marqués</sub></p>
+<p align="center"><sub>Project Manager v1.3.0 · Juan Bautista Galisteo Marqués</sub></p>

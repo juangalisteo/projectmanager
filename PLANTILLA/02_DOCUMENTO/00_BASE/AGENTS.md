@@ -38,12 +38,18 @@ Las normas completas, con ejemplos, están en `00_CONFIG/02_NAMING.md`. Se sigue
 - Todo texto que se entregue aplica `00_CONFIG/01_WRITING_RULES.md`: al redactar y en una segunda lectura completa antes de entregar. Son las reglas para escribir con voz natural y sin las marcas típicas de los textos generados con IA.
 - Los datos, citas y enlaces se comprueban en fuentes adecuadas al tema; lo que no se ha podido comprobar se dice.
 - El documento maquetado sigue `04_STYLE_MANUAL/00_MANUAL_DE_ESTILO.pdf` con el color de la ficha (`00_CONFIG/00_PROJECT_CONFIG.json`). El modo de aplicarlo está en `04_STYLE_MANUAL/02_PROMPTS/01_APLICAR_MANUAL.md`.
+[[SI IMAGENES]]
+- Las imágenes, láminas e infografías siguen el estilo de imágenes del manual (bloques 11 a 16). Se dibujan con `04_STYLE_MANUAL/02_PROMPTS/03_CREAR_IMAGEN_SVG.md`; para un generador de imágenes se usa `04_STYLE_MANUAL/02_PROMPTS/04_GENERADOR_IMAGENES.md`.
+[[FIN]]
 
 ## 5. Comprobación
 
 - El PDF exportado se revisa página por página antes de darlo por terminado.
 - Se corrige y se vuelve a comprobar hasta que no queden defectos visibles.
 - Para una revisión independiente, se usa `04_STYLE_MANUAL/02_PROMPTS/02_REVISION_ENTREGA.md` en un chat nuevo.
+[[SI IMAGENES]]
+- Cada imagen se revisa con la lista del bloque 16 del manual y, para una revisión independiente, con `04_STYLE_MANUAL/02_PROMPTS/05_REVISION_IMAGEN.md` en un chat nuevo.
+[[FIN]]
 
 ## 6. Al cerrar una tarea
 
